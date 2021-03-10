@@ -2,8 +2,6 @@
 
 param(
     [parameter(Mandatory=$false)]
-	[String] $AzureCredentialName = "Use *Default Automation Credential* Asset",
-    [parameter(Mandatory=$false)]
 	[String] $AzureSubscriptionName = "Use *Default Azure Subscription* Variable Value",
     [parameter(Mandatory=$false)]
     [bool]$Simulate = $true
