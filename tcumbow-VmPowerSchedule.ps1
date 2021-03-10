@@ -1,6 +1,4 @@
-﻿# TFC
-
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingCmdletAliases')]
+# TFC
 
 param(
     [parameter(Mandatory=$false)]
