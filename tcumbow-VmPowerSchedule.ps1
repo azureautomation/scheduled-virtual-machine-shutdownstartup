@@ -257,28 +257,12 @@ try
     Write-Output "Getting all the VMs from the subscription..."
     $AllVMs = Get-AzResource -ResourceType "Microsoft.Compute/virtualMachines"
 
-    foreach($vmResource in $AllVMs)
-    {
-        Write-Output VM : $($vmResource.Name)
-    }
-
-    $AzureVMList | Format-Table
-
-    Write-Host "Blarg"
-
-    exit
-
-    # Get resource groups that are tagged for automatic shutdown of resources
-	$taggedResourceGroups = @(Get-AzureRmResourceGroup | where {$_.Tags.Count -gt 0 -and $_.Tags.Name -contains "AutoPowerSchedule"})
-    $taggedResourceGroupNames = @($taggedResourceGroups | select -ExpandProperty ResourceGroupName)
-    Write-Output "Found [$($taggedResourceGroups.Count)] schedule-tagged resource groups in subscription"
-
     # For each VM, determine
     #  - Is it directly tagged for shutdown or member of a tagged resource group
     #  - Is the current time within the tagged schedule
     # Then assert its correct power state based on the assigned schedule (if present)
-    Write-Output "Processing [$($resourceManagerVMList.Count)] virtual machines found in subscription"
-    foreach($vm in $resourceManagerVMList)
+    Write-Output "Processing [$($AllVMs.Count)] virtual machines found in subscription"
+    foreach($vm in $AllVMs)
     {
         $schedule = $null
 
