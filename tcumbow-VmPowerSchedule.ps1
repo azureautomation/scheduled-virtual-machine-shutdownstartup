@@ -2,8 +2,6 @@
 
 param(
     [parameter(Mandatory=$false)]
-	[String] $AzureSubscriptionName = "Use *Default Azure Subscription* Variable Value",
-    [parameter(Mandatory=$false)]
     [bool]$Simulate = $true
 )
 
@@ -254,36 +252,21 @@ try
         -ApplicationId $servicePrincipalConnection.ApplicationId `
         -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint 
     Write-Output "Successfully logged into Azure subscription using Az cmdlets..."
-    
-    # Validate subscription
-    $subscriptions = @(Get-AzureSubscription | where {$_.SubscriptionName -eq $AzureSubscriptionName -or $_.SubscriptionId -eq $AzureSubscriptionName})
-    if($subscriptions.Count -eq 1)
-    {
-        # Set working subscription
-        $targetSubscription = $subscriptions | select -First 1
-        $targetSubscription | Select-AzureSubscription
-
-        # Connect via Azure Resource Manager 
-        $resourceManagerContext = Add-AzureRmAccount -Credential $azureCredential -SubscriptionId $targetSubscription.SubscriptionId 
-
-        $currentSubscription = Get-AzureSubscription -Current
-        Write-Output "Working against subscription: $($currentSubscription.SubscriptionName) ($($currentSubscription.SubscriptionId))"
-    }
-    else
-    {
-        if($subscription.Count -eq 0)
-        {
-            throw "No accessible subscription found with name or ID [$AzureSubscriptionName]. Check the runbook parameters and ensure user is a co-administrator on the target subscription."
-        }
-        elseif($subscriptions.Count -gt 1)
-        {
-            throw "More than one accessible subscription found with name or ID [$AzureSubscriptionName]. Please ensure your subscription names are unique, or specify the ID instead"
-        }
-    }
 
     # Get a list of all virtual machines in subscription
-    $resourceManagerVMList = @(Get-AzureRmResource | where {$_.ResourceType -like "Microsoft.*/virtualMachines"} | sort Name)
-    $classicVMList = Get-AzureVM
+    Write-Output "Getting all the VM's from the subscription..."  
+    $AllVMs = Get-AzResource -ResourceType "Microsoft.Compute/virtualMachines"
+
+    foreach($vmResource in $AllVMs)
+    {
+        Write-Output VM : $($vmResource.Name)
+    }
+
+    $AzureVMList | Format-Table
+    
+    Write-Host "Blarg"
+
+    exit
 
     # Get resource groups that are tagged for automatic shutdown of resources
 	$taggedResourceGroups = @(Get-AzureRmResourceGroup | where {$_.Tags.Count -gt 0 -and $_.Tags.Name -contains "AutoShutdownSchedule"})
