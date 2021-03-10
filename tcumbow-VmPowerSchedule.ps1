@@ -1,5 +1,7 @@
 ﻿# TFC
 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingCmdletAliases')]
+
 param(
     [parameter(Mandatory=$false)]
 	[String] $AzureSubscriptionName = "Use *Default Azure Subscription* Variable Value",
@@ -69,7 +71,7 @@ function CheckScheduleEntry ([string]$TimeRange)
 	            $parsedDay = Get-Date $TimeRange
 	        }
 	    
-	        if($parsedDay -ne $null)
+	        if($null -ne $parsedDay)
 	        {
 	            $rangeStart = $parsedDay # Defaults to midnight
 	            $rangeEnd = $parsedDay.AddHours(23).AddMinutes(59).AddSeconds(59) # End of the same day
@@ -320,8 +322,8 @@ try
             continue
         }
 
-        # Check that tag value was succesfully obtained
-        if($schedule -eq $null)
+        # Check that tag value was successfully obtained
+        if($null -eq $schedule)
         {
             Write-Output "[$($vm.Name)]: Failed to get tagged schedule for virtual machine. Skipping this VM."
             continue
