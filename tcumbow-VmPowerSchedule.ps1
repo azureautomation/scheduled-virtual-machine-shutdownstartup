@@ -34,7 +34,7 @@ function CheckScheduleEntry ([string]$TimeRange)
                     {
                         $rangeEnd = $rangeEnd.AddDays(1)
                     }
-                    # Otherwise interpret start time as yesterday and end time as today   
+                    # Otherwise interpret start time as yesterday and end time as today
                     else
                     {
                         $rangeStart = $rangeStart.AddDays(-1)
@@ -43,10 +43,10 @@ function CheckScheduleEntry ([string]$TimeRange)
 	        }
 	        else
 	        {
-	            Write-Output "`tWARNING: Invalid time range format. Expects valid .Net DateTime-formatted start time and end time separated by '->'" 
+	            Write-Output "`tWARNING: Invalid time range format. Expects valid .Net DateTime-formatted start time and end time separated by '->'"
 	        }
 	    }
-	    # Otherwise attempt to parse as a full day entry, e.g. 'Monday' or 'December 25' 
+	    # Otherwise attempt to parse as a full day entry, e.g. 'Monday' or 'December 25'
 	    else
 	    {
 	        # If specified as day of week, check if today
@@ -77,7 +77,7 @@ function CheckScheduleEntry ([string]$TimeRange)
 	catch
 	{
 	    # Record any errors and return false by default
-	    Write-Output "`tWARNING: Exception encountered while parsing time range. Details: $($_.Exception.Message). Check the syntax of entry, e.g. '<StartTime> -> <EndTime>', or days/dates like 'Sunday' and 'December 25'"   
+	    Write-Output "`tWARNING: Exception encountered while parsing time range. Details: $($_.Exception.Message). Check the syntax of entry, e.g. '<StartTime> -> <EndTime>', or days/dates like 'Sunday' and 'December 25'"
 	    return $false
 	}
 
@@ -176,7 +176,7 @@ function AssertResourceManagerVirtualMachinePowerState
 
     # Get VM with current status
     $resourceManagerVM = Get-AzureRmVM -ResourceGroupName $VirtualMachine.ResourceGroupName -Name $VirtualMachine.Name -Status
-    $currentStatus = $resourceManagerVM.Statuses | where Code -like "PowerState*" 
+    $currentStatus = $resourceManagerVM.Statuses | where Code -like "PowerState*"
     $currentStatus = $currentStatus.Code -replace "PowerState/",""
 
     # If should be started and isn't, start VM
@@ -245,16 +245,16 @@ try
 
     # Authentication and connection
     $connectionName = "AzureRunAsConnection"
-    $servicePrincipalConnection=Get-AutomationConnection -Name $connectionName         
+    $servicePrincipalConnection=Get-AutomationConnection -Name $connectionName
     Add-AzAccount `
         -ServicePrincipal `
         -TenantId $servicePrincipalConnection.TenantId `
         -ApplicationId $servicePrincipalConnection.ApplicationId `
-        -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint 
+        -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint
     Write-Output "Successfully logged into Azure subscription using Az cmdlets..."
 
     # Get a list of all virtual machines in subscription
-    Write-Output "Getting all the VMs from the subscription..."  
+    Write-Output "Getting all the VMs from the subscription..."
     $AllVMs = Get-AzResource -ResourceType "Microsoft.Compute/virtualMachines"
 
     foreach($vmResource in $AllVMs)
@@ -271,11 +271,11 @@ try
     # Get resource groups that are tagged for automatic shutdown of resources
 	$taggedResourceGroups = @(Get-AzureRmResourceGroup | where {$_.Tags.Count -gt 0 -and $_.Tags.Name -contains "AutoShutdownSchedule"})
     $taggedResourceGroupNames = @($taggedResourceGroups | select -ExpandProperty ResourceGroupName)
-    Write-Output "Found [$($taggedResourceGroups.Count)] schedule-tagged resource groups in subscription"	
+    Write-Output "Found [$($taggedResourceGroups.Count)] schedule-tagged resource groups in subscription"
 
     # For each VM, determine
     #  - Is it directly tagged for shutdown or member of a tagged resource group
-    #  - Is the current time within the tagged schedule 
+    #  - Is the current time within the tagged schedule
     # Then assert its correct power state based on the assigned schedule (if present)
     Write-Output "Processing [$($resourceManagerVMList.Count)] virtual machines found in subscription"
     foreach($vm in $resourceManagerVMList)
@@ -326,10 +326,10 @@ try
 		    }
 		}
 
-        # Enforce desired state for group resources based on result. 
+        # Enforce desired state for group resources based on result.
 		if($scheduleMatched)
 		{
-            # Schedule is matched. Shut down the VM if it is running. 
+            # Schedule is matched. Shut down the VM if it is running.
 		    Write-Output "[$($vm.Name)]: Current time [$currentTime] falls within the scheduled shutdown range [$matchedSchedule]"
 		    AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "StoppedDeallocated" -ResourceManagerVMList $resourceManagerVMList -ClassicVMList $classicVMList -Simulate $Simulate
 		}
