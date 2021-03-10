@@ -1,0 +1,8 @@
+@{
+    ExcludeRules = @(
+    'PSAvoidUsingWriteHost',
+    'PSAvoidUsingWMICmdlet',
+    'PSAvoidUsingCmdletAliases'
+    )
+}
+

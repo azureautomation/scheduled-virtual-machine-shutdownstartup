@@ -1,4 +1,4 @@
-# TFC
+﻿# TFC
 
 param(
     [parameter(Mandatory=$false)]
@@ -9,11 +9,11 @@ $VERSION = "2.0.2"
 
 # Define function to check current time against specified range
 function CheckScheduleEntry ([string]$TimeRange)
-{	
+{
 	# Initialize variables
 	$rangeStart, $rangeEnd, $parsedDay = $null
 	$currentTime = (Get-Date).ToUniversalTime()
-    $midnight = $currentTime.AddDays(1).Date	        
+    $midnight = $currentTime.AddDays(1).Date
 
 	try
 	{
@@ -25,7 +25,7 @@ function CheckScheduleEntry ([string]$TimeRange)
 	        {
 	            $rangeStart = Get-Date $timeRangeComponents[0]
 	            $rangeEnd = Get-Date $timeRangeComponents[1]
-	
+
 	            # Check for crossing midnight
 	            if($rangeStart -gt $rangeEnd)
 	            {
@@ -66,7 +66,7 @@ function CheckScheduleEntry ([string]$TimeRange)
 	        {
 	            $parsedDay = Get-Date $TimeRange
 	        }
-	    
+
 	        if($null -ne $parsedDay)
 	        {
 	            $rangeStart = $parsedDay # Defaults to midnight
@@ -80,7 +80,7 @@ function CheckScheduleEntry ([string]$TimeRange)
 	    Write-Output "`tWARNING: Exception encountered while parsing time range. Details: $($_.Exception.Message). Check the syntax of entry, e.g. '<StartTime> -> <EndTime>', or days/dates like 'Sunday' and 'December 25'"   
 	    return $false
 	}
-	
+
 	# Check if current time falls within range
 	if($currentTime -ge $rangeStart -and $currentTime -le $rangeEnd)
 	{
@@ -90,7 +90,7 @@ function CheckScheduleEntry ([string]$TimeRange)
 	{
 	    return $false
 	}
-	
+
 } # End function CheckScheduleEntry
 
 # Function to handle power state assertion for both classic and resource manager VMs
@@ -143,7 +143,7 @@ function AssertClassicVirtualMachinePowerState
             $VirtualMachine | Start-AzureVM
         }
 	}
-		
+
 	# If should be stopped and isn't, stop VM
 	elseif($DesiredState -eq "StoppedDeallocated" -and $VirtualMachine.PowerState -ne "Stopped")
 	{
@@ -192,7 +192,7 @@ function AssertResourceManagerVirtualMachinePowerState
             $resourceManagerVM | Start-AzureRmVM
         }
 	}
-		
+
 	# If should be stopped and isn't, stop VM
 	elseif($DesiredState -eq "StoppedDeallocated" -and $currentStatus -ne "deallocated")
 	{
@@ -228,7 +228,7 @@ try
         Write-Output "*** Running in LIVE mode. Schedules will be enforced. ***"
     }
     Write-Output "Current UTC/GMT time [$($currentTime.ToString("dddd, yyyy MMM dd HH:mm:ss"))] will be checked against schedules"
-	
+
     # Retrieve subscription name from variable asset if not specified
     if($AzureSubscriptionName -eq "Use *Default Azure Subscription* Variable Value")
     {
@@ -254,7 +254,7 @@ try
     Write-Output "Successfully logged into Azure subscription using Az cmdlets..."
 
     # Get a list of all virtual machines in subscription
-    Write-Output "Getting all the VM's from the subscription..."  
+    Write-Output "Getting all the VMs from the subscription..."  
     $AllVMs = Get-AzResource -ResourceType "Microsoft.Compute/virtualMachines"
 
     foreach($vmResource in $AllVMs)
@@ -263,7 +263,7 @@ try
     }
 
     $AzureVMList | Format-Table
-    
+
     Write-Host "Blarg"
 
     exit
@@ -312,7 +312,7 @@ try
 
         # Parse the ranges in the Tag value. Expects a string of comma-separated time ranges, or a single time range
 		$timeRangeList = @($schedule -split "," | foreach {$_.Trim()})
-	    
+
         # Check each range against the current time to see if any schedule is matched
 		$scheduleMatched = $false
         $matchedSchedule = $null
@@ -338,7 +338,7 @@ try
             # Schedule not matched. Start VM if stopped.
 		    Write-Output "[$($vm.Name)]: Current time falls outside of all scheduled shutdown ranges."
 		    AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "Started" -ResourceManagerVMList $resourceManagerVMList -ClassicVMList $classicVMList -Simulate $Simulate
-		}	    
+		}
     }
 
     Write-Output "Finished processing virtual machine schedules"
