@@ -1,4 +1,4 @@
-﻿<#
+<#
     .SYNOPSIS
         This Azure Automation runbook automates the scheduled shutdown and startup of virtual machines in an Azure subscription. 
 
@@ -52,7 +52,7 @@ param(
     [parameter(Mandatory=$false)]
 	[String] $AzureSubscriptionName = "Use *Default Azure Subscription* Variable Value",
     [parameter(Mandatory=$false)]
-    [bool]$Simulate = $false
+    [bool]$Simulate = $true
 )
 
 $VERSION = "2.0.2"
