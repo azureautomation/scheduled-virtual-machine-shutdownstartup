@@ -1,4 +1,4 @@
-﻿# TFC
+# TFC
 
 param(
     [parameter(Mandatory=$false)]
@@ -109,7 +109,7 @@ function AssertVirtualMachinePowerState
 
     # Get VM with current status
     $currentStatus = Get-VmPowerState $vm
-    Write-Output "[$($vm.Name)]: Current status is $currentStatus"
+    Write-Output "[$($vm.Name)]: Current power state is [$currentStatus]"
 
     # If should be started and isn't, start VM
 	if($DesiredState -eq "Started" -and $currentStatus -notmatch "running")
