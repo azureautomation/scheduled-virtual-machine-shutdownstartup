@@ -14,6 +14,7 @@ function CheckScheduleEntry ([string]$TimeRange)
 	$rangeStart, $rangeEnd, $parsedDay = $null
 	$currentTime = (Get-Date).ToUniversalTime()
     $midnight = $currentTime.AddDays(1).Date
+    Write-Warning "Interpreting time range string: $TimeRange"
 
 	try
 	{
@@ -24,7 +25,9 @@ function CheckScheduleEntry ([string]$TimeRange)
 	        if($timeRangeComponents.Count -eq 2)
 	        {
 	            $rangeStart = Get-Date $timeRangeComponents[0]
+                Write-Warning "Interpreted start time as $rangeStart"
 	            $rangeEnd = Get-Date $timeRangeComponents[1]
+                Write-Warning "Interpreted end time as $rangeEnd"
 
 	            # Check for crossing midnight
 	            if($rangeStart -gt $rangeEnd)
