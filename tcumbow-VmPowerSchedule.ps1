@@ -1,4 +1,4 @@
-﻿# TFC
+# TFC
 
 param(
     [parameter(Mandatory=$false)]
@@ -118,50 +118,6 @@ function AssertVirtualMachinePowerState
     else
     {
         Write-Output "VM type not recognized: [$($VirtualMachine.ResourceType)]. Skipping."
-    }
-}
-
-# Function to handle power state assertion for classic VM
-function AssertClassicVirtualMachinePowerState
-{
-    param(
-        [Object]$VirtualMachine,
-        [string]$DesiredState,
-        [bool]$Simulate
-    )
-
-    # If should be started and isn't, start VM
-	if($DesiredState -eq "Started" -and $VirtualMachine.PowerState -notmatch "Started|Starting")
-	{
-		if($Simulate)
-        {
-            Write-Output "[$($VirtualMachine.Name)]: SIMULATION -- Would have started VM. (No action taken)"
-        }
-        else
-        {
-            Write-Output "[$($VirtualMachine.Name)]: Starting VM"
-            $VirtualMachine | Start-AzureVM
-        }
-	}
-
-	# If should be stopped and isn't, stop VM
-	elseif($DesiredState -eq "StoppedDeallocated" -and $VirtualMachine.PowerState -ne "Stopped")
-	{
-        if($Simulate)
-        {
-            Write-Output "[$($VirtualMachine.Name)]: SIMULATION -- Would have stopped VM. (No action taken)"
-        }
-        else
-        {
-            Write-Output "[$($VirtualMachine.Name)]: Stopping VM"
-            $VirtualMachine | Stop-AzureVM -Force
-        }
-	}
-
-    # Otherwise, current power state is correct
-    else
-    {
-        Write-Output "[$($VirtualMachine.Name)]: Current power state [$($VirtualMachine.PowerState)] is correct."
     }
 }
 
