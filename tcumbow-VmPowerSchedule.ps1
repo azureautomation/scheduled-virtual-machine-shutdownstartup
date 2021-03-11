@@ -99,26 +99,12 @@ function AssertVirtualMachinePowerState
     param(
         [Object]$VirtualMachine,
         [string]$DesiredState,
-        [Object[]]$ResourceManagerVMList,
-        [Object[]]$ClassicVMList,
         [bool]$Simulate
     )
 
     # Get VM depending on type
-    if($VirtualMachine.ResourceType -eq "Microsoft.ClassicCompute/virtualMachines")
-    {
-        $classicVM = $ClassicVMList | where Name -eq $VirtualMachine.Name
-        AssertClassicVirtualMachinePowerState -VirtualMachine $classicVM -DesiredState $DesiredState -Simulate $Simulate
-    }
-    elseif($VirtualMachine.ResourceType -eq "Microsoft.Compute/virtualMachines")
-    {
-        $resourceManagerVM = $ResourceManagerVMList | where Name -eq $VirtualMachine.Name
-        AssertResourceManagerVirtualMachinePowerState -VirtualMachine $resourceManagerVM -DesiredState $DesiredState -Simulate $Simulate
-    }
-    else
-    {
-        Write-Output "VM type not recognized: [$($VirtualMachine.ResourceType)]. Skipping."
-    }
+    $resourceManagerVM = $ResourceManagerVMList | where Name -eq $VirtualMachine.Name
+    AssertResourceManagerVirtualMachinePowerState -VirtualMachine $resourceManagerVM -DesiredState $DesiredState -Simulate $Simulate
 }
 
 # Function to handle power state assertion for resource manager VM
