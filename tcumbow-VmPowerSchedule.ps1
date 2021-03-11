@@ -1,4 +1,4 @@
-# TFC
+﻿# TFC
 
 param(
     [parameter(Mandatory=$false)]
@@ -178,11 +178,7 @@ try
     # Authentication and connection
     $connectionName = "AzureRunAsConnection"
     $servicePrincipalConnection=Get-AutomationConnection -Name $connectionName
-    Add-AzAccount `
-        -ServicePrincipal `
-        -TenantId $servicePrincipalConnection.TenantId `
-        -ApplicationId $servicePrincipalConnection.ApplicationId `
-        -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint
+    $DummyVariable = $(Add-AzAccount -ServicePrincipal -TenantId $servicePrincipalConnection.TenantId -ApplicationId $servicePrincipalConnection.ApplicationId -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint)
     Write-Output "Successfully logged into Azure subscription using Az cmdlets..."
 
     # Get a list of all virtual machines in subscription
