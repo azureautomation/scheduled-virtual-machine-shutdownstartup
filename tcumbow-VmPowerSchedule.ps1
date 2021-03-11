@@ -258,7 +258,7 @@ try
     $AllVMs = Get-AzResource -ResourceType "Microsoft.Compute/virtualMachines"
 
     # For each VM, determine
-    #  - Is it directly tagged for shutdown or member of a tagged resource group
+    #  - Is it directly tagged for shutdown
     #  - Is the current time within the tagged schedule
     # Then assert its correct power state based on the assigned schedule (if present)
     Write-Output "Processing [$($AllVMs.Count)] virtual machines found in subscription"
@@ -266,24 +266,17 @@ try
     {
         $schedule = $null
 
-        # Check for direct tag or group-inherited tag
+        # Check for tag
         if($vm.ResourceType -eq "Microsoft.Compute/virtualMachines" -and $vm.Tags.AutoPowerSchedule)
         {
-            # VM has direct tag (possible for resource manager deployment model VMs). Prefer this tag schedule.
+            # VM has direct tag
             $schedule = ($vm.Tags | where Name -eq "AutoPowerSchedule")["Value"]
             Write-Output "[$($vm.Name)]: Found direct VM schedule tag with value: $schedule"
         }
-        elseif($taggedResourceGroupNames -contains $vm.ResourceGroupName)
-        {
-            # VM belongs to a tagged resource group. Use the group tag
-            $parentGroup = $taggedResourceGroups | where ResourceGroupName -eq $vm.ResourceGroupName
-            $schedule = ($parentGroup.Tags | where Name -eq "AutoPowerSchedule")["Value"]
-            Write-Output "[$($vm.Name)]: Found parent resource group schedule tag with value: $schedule"
-        }
         else
         {
-            # No direct or inherited tag. Skip this VM.
-            Write-Output "[$($vm.Name)]: Not tagged for shutdown directly or via membership in a tagged resource group. Skipping this VM."
+            # No tag. Skip this VM.
+            Write-Output "[$($vm.Name)]: Not tagged for shutdown. Skipping this VM."
             continue
         }
 
