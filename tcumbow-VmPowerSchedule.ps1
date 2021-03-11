@@ -267,7 +267,7 @@ try
         $schedule = $null
 
         # Check for direct tag or group-inherited tag
-        if($vm.ResourceType -eq "Microsoft.Compute/virtualMachines" -and $vm.Tags -and $vm.Tags.Name -contains "AutoPowerSchedule")
+        if($vm.ResourceType -eq "Microsoft.Compute/virtualMachines" -and $vm.Tags.AutoPowerSchedule)
         {
             # VM has direct tag (possible for resource manager deployment model VMs). Prefer this tag schedule.
             $schedule = ($vm.Tags | where Name -eq "AutoPowerSchedule")["Value"]
