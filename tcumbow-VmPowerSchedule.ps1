@@ -1,4 +1,4 @@
-﻿# TFC
+# TFC
 
 param(
     [parameter(Mandatory=$false)]
@@ -43,7 +43,7 @@ function CheckScheduleEntry ([string]$TimeRange)
 	        }
 	        else
 	        {
-	            Write-Output "`tWARNING: Invalid time range format. Expects valid .Net DateTime-formatted start time and end time separated by '->'"
+	            Write-Warning "`tWARNING: Invalid time range format. Expects valid .Net DateTime-formatted start time and end time separated by '->'"
 	        }
 	    }
 	    # Otherwise attempt to parse as a full day entry, e.g. 'Monday' or 'December 25'
@@ -77,7 +77,7 @@ function CheckScheduleEntry ([string]$TimeRange)
 	catch
 	{
 	    # Record any errors and return false by default
-	    Write-Output "`tWARNING: Exception encountered while parsing time range. Details: $($_.Exception.Message). Check the syntax of entry, e.g. '<StartTime> -> <EndTime>', or days/dates like 'Sunday' and 'December 25'"
+	    Write-Warning "`tWARNING: Exception encountered while parsing time range. Details: $($_.Exception.Message). Check the syntax of entry, e.g. '<StartTime> -> <EndTime>', or days/dates like 'Sunday' and 'December 25'"
 	    return $false
 	}
 
@@ -109,18 +109,18 @@ function AssertVirtualMachinePowerState
 
     # Get VM with current status
     $currentStatus = Get-VmPowerState $vm
-    Write-Output "[$($vm.Name)]: Current power state is [$currentStatus]"
+    Write-Warning "[$($vm.Name)]: Current power state is [$currentStatus]"
 
     # If should be started and isn't, start VM
 	if($DesiredState -eq "Started" -and $currentStatus -notmatch "running")
 	{
         if($Simulate)
         {
-            Write-Output "[$($vm.Name)]: SIMULATION -- Would have started VM. (No action taken)"
+            Write-Warning "[$($vm.Name)]: SIMULATION -- Would have started VM. (No action taken)"
         }
         else
         {
-            Write-Output "[$($vm.Name)]: Starting VM"
+            Write-Warning "[$($vm.Name)]: Starting VM"
             Start-AzVM -Id $vm.Id
         }
 	}
@@ -130,11 +130,11 @@ function AssertVirtualMachinePowerState
 	{
         if($Simulate)
         {
-            Write-Output "[$($vm.Name)]: SIMULATION -- Would have stopped VM. (No action taken)"
+            Write-Warning "[$($vm.Name)]: SIMULATION -- Would have stopped VM. (No action taken)"
         }
         else
         {
-            Write-Output "[$($vm.Name)]: Stopping VM"
+            Write-Warning "[$($vm.Name)]: Stopping VM"
             Stop-AzVM -Id $vm.Id
         }
 	}
@@ -142,7 +142,7 @@ function AssertVirtualMachinePowerState
     # Otherwise, current power state is correct
     else
     {
-        Write-Output "[$($vm.Name)]: Current power state [$currentStatus] is correct."
+        Write-Warning "[$($vm.Name)]: Current power state [$currentStatus] is correct."
     }
 }
 
@@ -150,16 +150,16 @@ function AssertVirtualMachinePowerState
 try
 {
     $currentTime = (Get-Date).ToUniversalTime()
-    Write-Output "Runbook started. Version: $VERSION"
+    Write-Warning "Runbook started. Version: $VERSION"
     if($Simulate)
     {
-        Write-Output "*** Running in SIMULATE mode. No power actions will be taken. ***"
+        Write-Warning "*** Running in SIMULATE mode. No power actions will be taken. ***"
     }
     else
     {
-        Write-Output "*** Running in LIVE mode. Schedules will be enforced. ***"
+        Write-Warning "*** Running in LIVE mode. Schedules will be enforced. ***"
     }
-    Write-Output "Current UTC/GMT time [$($currentTime.ToString("dddd, yyyy MMM dd HH:mm:ss"))] will be checked against schedules"
+    Write-Warning "Current UTC/GMT time [$($currentTime.ToString("dddd, yyyy MMM dd HH:mm:ss"))] will be checked against schedules"
 
     # Retrieve subscription name from variable asset if not specified
     if($AzureSubscriptionName -eq "Use *Default Azure Subscription* Variable Value")
@@ -167,7 +167,7 @@ try
         $AzureSubscriptionName = Get-AutomationVariable -Name "Default Azure Subscription"
         if($AzureSubscriptionName.length -gt 0)
         {
-            Write-Output "Specified subscription name/ID: [$AzureSubscriptionName]"
+            Write-Warning "Specified subscription name/ID: [$AzureSubscriptionName]"
         }
         else
         {
@@ -179,17 +179,17 @@ try
     $connectionName = "AzureRunAsConnection"
     $servicePrincipalConnection=Get-AutomationConnection -Name $connectionName
     $DummyVariable = $(Add-AzAccount -ServicePrincipal -TenantId $servicePrincipalConnection.TenantId -ApplicationId $servicePrincipalConnection.ApplicationId -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint)
-    Write-Output "Successfully logged into Azure subscription using Az cmdlets..."
+    Write-Warning "Successfully logged into Azure subscription using Az cmdlets..."
 
     # Get a list of all virtual machines in subscription
-    Write-Output "Getting all the VMs from the subscription..."
+    Write-Warning "Getting all the VMs from the subscription..."
     $AllVMs = Get-AzResource -ResourceType "Microsoft.Compute/virtualMachines"
 
     # For each VM, determine
     #  - Is it directly tagged for shutdown
     #  - Is the current time within the tagged schedule
     # Then assert its correct power state based on the assigned schedule (if present)
-    Write-Output "Processing [$($AllVMs.Count)] virtual machines found in subscription"
+    Write-Warning "Processing [$($AllVMs.Count)] virtual machines found in subscription"
     foreach($vm in $AllVMs)
     {
         $schedule = $null
@@ -199,19 +199,19 @@ try
         {
             # VM has direct tag
             $schedule = $vm.Tags.AutoPowerSchedule
-            Write-Output "[$($vm.Name)]: Found direct VM schedule tag with value: $schedule"
+            Write-Warning "[$($vm.Name)]: Found direct VM schedule tag with value: $schedule"
         }
         else
         {
             # No tag. Skip this VM.
-            Write-Output "[$($vm.Name)]: Not tagged for shutdown. Skipping this VM."
+            Write-Warning "[$($vm.Name)]: Not tagged for shutdown. Skipping this VM."
             continue
         }
 
         # Check that tag value was successfully obtained
         if($null -eq $schedule)
         {
-            Write-Output "[$($vm.Name)]: Failed to get tagged schedule for virtual machine. Skipping this VM."
+            Write-Warning "[$($vm.Name)]: Failed to get tagged schedule for virtual machine. Skipping this VM."
             continue
         }
 
@@ -235,18 +235,18 @@ try
 		if($scheduleMatched)
 		{
             # Schedule is matched. Shut down the VM if it is running.
-		    Write-Output "[$($vm.Name)]: Current time [$currentTime] falls within the scheduled shutdown range [$matchedSchedule]"
+		    Write-Warning "[$($vm.Name)]: Current time [$currentTime] falls within the scheduled shutdown range [$matchedSchedule]"
 		    AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "StoppedDeallocated" -Simulate $Simulate
 		}
 		else
 		{
             # Schedule not matched. Start VM if stopped.
-		    Write-Output "[$($vm.Name)]: Current time falls outside of all scheduled shutdown ranges."
+		    Write-Warning "[$($vm.Name)]: Current time falls outside of all scheduled shutdown ranges."
 		    AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "Started" -Simulate $Simulate
 		}
     }
 
-    Write-Output "Finished processing virtual machine schedules"
+    Write-Warning "Finished processing virtual machine schedules"
 }
 catch
 {
@@ -255,5 +255,5 @@ catch
 }
 finally
 {
-    Write-Output "Runbook finished (Duration: $(("{0:hh\:mm\:ss}" -f ((Get-Date).ToUniversalTime() - $currentTime))))"
+    Write-Warning "Runbook finished (Duration: $(("{0:hh\:mm\:ss}" -f ((Get-Date).ToUniversalTime() - $currentTime))))"
 }
