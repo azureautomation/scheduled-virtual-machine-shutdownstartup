@@ -1,4 +1,4 @@
-﻿# TFC
+# TFC
 
 param(
     [parameter(Mandatory=$false)]
@@ -93,6 +93,10 @@ function CheckScheduleEntry ([string]$TimeRange)
 
 } # End function CheckScheduleEntry
 
+function Get-VmPowerState ($vm)
+{
+    ((Get-AzVM -Name $vm.Name -ResourceGroup $vm.ResourceGroupName -Status).Statuses | where {$_.Code -like "PowerState*"} | Select -First 1 -ExpandProperty Code) -replace "PowerState/"
+}
 # Function to handle power state assertion VM
 function AssertVirtualMachinePowerState
 {
