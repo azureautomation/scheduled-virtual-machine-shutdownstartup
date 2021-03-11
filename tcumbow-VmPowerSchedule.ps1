@@ -270,7 +270,7 @@ try
         if($vm.ResourceType -eq "Microsoft.Compute/virtualMachines" -and $vm.Tags.AutoPowerSchedule)
         {
             # VM has direct tag
-            $schedule = ($vm.Tags | where Name -eq "AutoPowerSchedule")["Value"]
+            $schedule = $vm.Tags.AutoPowerSchedule
             Write-Output "[$($vm.Name)]: Found direct VM schedule tag with value: $schedule"
         }
         else
