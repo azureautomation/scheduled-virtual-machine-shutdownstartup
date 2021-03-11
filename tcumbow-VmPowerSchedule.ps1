@@ -1,4 +1,4 @@
-# TFC
+﻿# TFC
 
 param(
     [parameter(Mandatory=$false)]
@@ -105,23 +105,23 @@ function AssertVirtualMachinePowerState
         [string]$DesiredState,
         [bool]$Simulate
     )
+    $vm = $VirtualMachine # shorter name for this variable
 
     # Get VM with current status
-    $resourceManagerVM = Get-AzureRmVM -ResourceGroupName $VirtualMachine.ResourceGroupName -Name $VirtualMachine.Name -Status
-    $currentStatus = $resourceManagerVM.Statuses | where Code -like "PowerState*"
-    $currentStatus = $currentStatus.Code -replace "PowerState/",""
+    $currentStatus = Get-VmPowerState $vm
+    Write-Output "[$($vm.Name)]: Current status is $currentStatus"
 
     # If should be started and isn't, start VM
 	if($DesiredState -eq "Started" -and $currentStatus -notmatch "running")
 	{
         if($Simulate)
         {
-            Write-Output "[$($VirtualMachine.Name)]: SIMULATION -- Would have started VM. (No action taken)"
+            Write-Output "[$($vm.Name)]: SIMULATION -- Would have started VM. (No action taken)"
         }
         else
         {
-            Write-Output "[$($VirtualMachine.Name)]: Starting VM"
-            $resourceManagerVM | Start-AzureRmVM
+            Write-Output "[$($vm.Name)]: Starting VM"
+            Start-AzVM -Id $vm.Id
         }
 	}
 
@@ -130,19 +130,19 @@ function AssertVirtualMachinePowerState
 	{
         if($Simulate)
         {
-            Write-Output "[$($VirtualMachine.Name)]: SIMULATION -- Would have stopped VM. (No action taken)"
+            Write-Output "[$($vm.Name)]: SIMULATION -- Would have stopped VM. (No action taken)"
         }
         else
         {
-            Write-Output "[$($VirtualMachine.Name)]: Stopping VM"
-            $resourceManagerVM | Stop-AzureRmVM -Force
+            Write-Output "[$($vm.Name)]: Stopping VM"
+            Stop-AzVM -Id $vm.Id
         }
 	}
 
     # Otherwise, current power state is correct
     else
     {
-        Write-Output "[$($VirtualMachine.Name)]: Current power state [$currentStatus] is correct."
+        Write-Output "[$($vm.Name)]: Current power state [$currentStatus] is correct."
     }
 }
 
