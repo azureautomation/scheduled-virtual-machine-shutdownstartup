@@ -93,22 +93,8 @@ function CheckScheduleEntry ([string]$TimeRange)
 
 } # End function CheckScheduleEntry
 
-# Function to handle power state assertion for both classic and resource manager VMs
+# Function to handle power state assertion VM
 function AssertVirtualMachinePowerState
-{
-    param(
-        [Object]$VirtualMachine,
-        [string]$DesiredState,
-        [bool]$Simulate
-    )
-
-    # Get VM depending on type
-    $resourceManagerVM = $ResourceManagerVMList | where Name -eq $VirtualMachine.Name
-    AssertResourceManagerVirtualMachinePowerState -VirtualMachine $resourceManagerVM -DesiredState $DesiredState -Simulate $Simulate
-}
-
-# Function to handle power state assertion for resource manager VM
-function AssertResourceManagerVirtualMachinePowerState
 {
     param(
         [Object]$VirtualMachine,
