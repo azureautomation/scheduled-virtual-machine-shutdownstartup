@@ -85,7 +85,9 @@ function CheckScheduleEntry ([string]$TimeRange)
 	        if($null -ne $parsedDay)
 	        {
 	            $rangeStart = $parsedDay # Defaults to midnight
+                Write-Verbose "Interpreted start time as $rangeStart"
 	            $rangeEnd = $parsedDay.AddHours(23).AddMinutes(59).AddSeconds(59) # End of the same day
+                Write-Verbose "Interpreted end time as $rangeStart"
 	        }
 	    }
 	}
