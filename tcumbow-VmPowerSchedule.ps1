@@ -137,8 +137,8 @@ function AssertVirtualMachinePowerState
         }
         else
         {
-            Write-Verbose "[$($vm.Name)]: Starting VM"
-            Start-AzVM -Id $vm.Id
+            Write-Warning "[$($vm.Name)]: Starting VM"
+            Start-AzVM -Id $vm.Id | Write-Verbose
         }
 	}
 
@@ -151,8 +151,8 @@ function AssertVirtualMachinePowerState
         }
         else
         {
-            Write-Verbose "[$($vm.Name)]: Stopping VM"
-            Stop-AzVM -Id $vm.Id -Force
+            Write-Warning "[$($vm.Name)]: Stopping VM"
+            Stop-AzVM -Id $vm.Id -Force | Write-Verbose
         }
 	}
 
