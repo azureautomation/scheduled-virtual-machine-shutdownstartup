@@ -10,6 +10,7 @@ param(
 $VERSION = "0.0.4"
 
 if ($DevMode) {
+    $GLOBAL:VerbosePreference = "Continue"
     Install-Module Az.Resources -Scope CurrentUser
     Install-Module Az.Compute -Scope CurrentUser
 }
