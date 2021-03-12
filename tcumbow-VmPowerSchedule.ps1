@@ -208,10 +208,10 @@ try
         $schedule = $null
 
         # Check for tag
-        if($vm.ResourceType -eq "Microsoft.Compute/virtualMachines" -and $vm.Tags.AutoPowerSchedule)
+        if($vm.ResourceType -eq "Microsoft.Compute/virtualMachines" -and $vm.Tags.AutoShutdownSchedule)
         {
             # VM has direct tag
-            $schedule = $vm.Tags.AutoPowerSchedule
+            $schedule = $vm.Tags.AutoShutdownSchedule
             Write-Verbose "[$($vm.Name)]: Found direct VM schedule tag with value: $schedule"
         }
         else
