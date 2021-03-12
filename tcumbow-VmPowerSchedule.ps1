@@ -7,7 +7,7 @@ param(
     [bool]$SkipAuth = $false
 )
 
-$VERSION = "2.0.2"
+$VERSION = "0.0.3"
 
 # Define function to check current time against specified range
 function CheckScheduleEntry ([string]$TimeRange)
