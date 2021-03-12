@@ -1,4 +1,4 @@
-﻿# TFC
+# TFC
 
 param(
     [parameter(Mandatory=$false)]
@@ -140,7 +140,7 @@ function AssertVirtualMachinePowerState
         else
         {
             Write-Warning "[$($vm.Name)]: Stopping VM"
-            Stop-AzVM -Id $vm.Id
+            Stop-AzVM -Id $vm.Id -Force
         }
 	}
 
