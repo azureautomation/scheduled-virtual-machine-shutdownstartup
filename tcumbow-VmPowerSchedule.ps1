@@ -9,6 +9,9 @@ param(
 
 $VERSION = "0.0.3"
 
+Install-Module Az.Resources -Scope CurrentUser
+Install-Module Az.Compute -Scope CurrentUser
+
 # Define function to check current time against specified range
 function CheckScheduleEntry ([string]$TimeRange)
 {
