@@ -73,7 +73,7 @@ function CheckScheduleEntry ([string]$TimeRange)
 	            }
 	            else
 	            {
-	                # Skip detected day of week that isn't today
+	                Write-Verbose "Skipping detected day of week that isn't today"
 	            }
 	        }
 	        # Otherwise attempt to parse as a date, e.g. 'December 25'
