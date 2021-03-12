@@ -4,13 +4,15 @@ param(
     [parameter(Mandatory=$false)]
     [bool]$Simulate = $true,
     [parameter(Mandatory=$false)]
-    [bool]$SkipAuth = $false
+    [bool]$DevMode = $false
 )
 
-$VERSION = "0.0.3"
+$VERSION = "0.0.4"
 
-Install-Module Az.Resources -Scope CurrentUser
-Install-Module Az.Compute -Scope CurrentUser
+if ($DevMode) {
+    Install-Module Az.Resources -Scope CurrentUser
+    Install-Module Az.Compute -Scope CurrentUser
+}
 
 # Define function to check current time against specified range
 function CheckScheduleEntry ([string]$TimeRange)
@@ -184,7 +186,7 @@ try
     }
 
     # Authentication and connection
-    if (-not $SkipAuth) {
+    if (-not $DevMode) {
         $connectionName = "AzureRunAsConnection"
         $servicePrincipalConnection=Get-AutomationConnection -Name $connectionName
         $DummyVariable = $(Add-AzAccount -ServicePrincipal -TenantId $servicePrincipalConnection.TenantId -ApplicationId $servicePrincipalConnection.ApplicationId -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint)
