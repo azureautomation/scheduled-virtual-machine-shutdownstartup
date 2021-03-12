@@ -1,8 +1,10 @@
-# TFC
+﻿# TFC
 
 param(
     [parameter(Mandatory=$false)]
-    [bool]$Simulate = $true
+    [bool]$Simulate = $true,
+    [parameter(Mandatory=$false)]
+    [bool]$SkipAuth = $false
 )
 
 $VERSION = "2.0.2"
@@ -179,10 +181,12 @@ try
     }
 
     # Authentication and connection
-    $connectionName = "AzureRunAsConnection"
-    $servicePrincipalConnection=Get-AutomationConnection -Name $connectionName
-    $DummyVariable = $(Add-AzAccount -ServicePrincipal -TenantId $servicePrincipalConnection.TenantId -ApplicationId $servicePrincipalConnection.ApplicationId -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint)
-    Write-Warning "Successfully logged into Azure subscription using Az cmdlets..."
+    if (-not $SkipAuth) {
+        $connectionName = "AzureRunAsConnection"
+        $servicePrincipalConnection=Get-AutomationConnection -Name $connectionName
+        $DummyVariable = $(Add-AzAccount -ServicePrincipal -TenantId $servicePrincipalConnection.TenantId -ApplicationId $servicePrincipalConnection.ApplicationId -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint)
+        Write-Warning "Successfully logged into Azure subscription using Az cmdlets..."
+    }
 
     # Get a list of all virtual machines in subscription
     Write-Warning "Getting all the VMs from the subscription..."
