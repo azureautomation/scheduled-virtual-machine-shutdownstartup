@@ -4,7 +4,7 @@ param(
     [parameter(Mandatory=$false)]
     [bool]$Simulate = $true,
     [parameter(Mandatory=$false)]
-    [bool]$DevMode = $false
+    [switch]$DevMode
 )
 
 $VERSION = "0.0.4"
