@@ -1,4 +1,4 @@
-﻿# TFC
+# TFC
 
 param(
     [parameter(Mandatory=$false)]
@@ -11,8 +11,12 @@ $VERSION = "0.0.4"
 
 if ($DevMode) {
     $GLOBAL:VerbosePreference = "Continue"
-    Install-Module Az.Resources -Scope CurrentUser
-    Install-Module Az.Compute -Scope CurrentUser
+    if (-not $GLOBAL:CheckedDependenciesForVmPowerScheduleRunbook)
+    {
+        Install-Module Az.Resources -Scope CurrentUser
+        Install-Module Az.Compute -Scope CurrentUser
+        $GLOBAL:CheckedDependenciesForVmPowerScheduleRunbook = $true
+    }
 }
 
 # Define function to check current time against specified range
