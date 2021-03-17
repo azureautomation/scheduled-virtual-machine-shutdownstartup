@@ -8,7 +8,6 @@ function Main
 {
     return CheckSchedule $ScriptScheduleText $ScriptCurrentDateTime
 }
-
 function SplitTimeRangeText ([string]$TimeRangeText)
 {
 	$timeRangeComponents = $TimeRangeText -split "->" | foreach {$_.Trim()}
@@ -121,8 +120,6 @@ function TimeRangeTextIsValid ([string]$TimeRangeText)
 		return $true
 	}
 }
-
-# Define function to check current time against specified range
 function CheckScheduleEntry ([string]$TimeRangeText,[datetime]$CurrentDateTime)
 {
 	# Initialize variables
@@ -153,7 +150,6 @@ function CheckScheduleEntry ([string]$TimeRangeText,[datetime]$CurrentDateTime)
 	else {Write-Verbose "Did NOT match against ScheduleEntry $TimeRangeText"}
 	return $MatchSuccess
 } # End function CheckScheduleEntry
-
 function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 {
 	$CurrentDateTime = $CurrentDateTime.ToUniversalTime()
