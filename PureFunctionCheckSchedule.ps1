@@ -17,8 +17,8 @@ function SplitTimeRangeText ([string]$TimeRangeText)
 	}
 	if($timeRangeComponents.Count -ne 2) {return $null}
 	$TimeRangeHT = @{ }
-	TimeRangeHT.Start = $timeRangeComponents[0]
-	TimeRangeHT.End = $timeRangeComponents[1]
+	$TimeRangeHT.Start = $timeRangeComponents[0]
+	$TimeRangeHT.End = $timeRangeComponents[1]
 	return $TimeRangeHT
 }
 $script:DayOfWeekStrings = @{ # using progressively shorter strings so when used for search/replace, it replaces as much as possible. Also, assuming we will ToLower before matching against this hashtable
@@ -52,7 +52,7 @@ function ValidateTimeText ($TimeText)
 	if (TimeTextStartsWithDayOfWeek $TimeText) {
 		foreach ($DOWstring in $script:DayOfWeekStrings.GetEnumerator()) {
 			if ($TimeText -like "$($DOWstring.key) *") {
-				$TimeText = $TimeText -replace("$($DOWstring.key) ")
+				$TimeText = ($TimeText -replace("$($DOWstring.key) ")).Trim()
 				break # only remove one day-of-week prefix because we still want to error out if they put in two day-of-week strings in there
 			}
 		}
@@ -62,12 +62,30 @@ function ValidateTimeText ($TimeText)
 	$ConvertedDateTime = Get-Date -Date $TimeText
 	return (-not($null -eq $ConvertedDateTime))
 }
+function InterpretTimeText ([string]$TimeText,[datetime]$CurrentDateTime)
+{
+	Write-Verbose "function InterpretTimeText called with TimeText: $TimeText"
+	$DayOffset = 0
+	if (TimeTextStartsWithDayOfWeek $TimeText) {
+		foreach ($DOWstring in $script:DayOfWeekStrings.GetEnumerator()) {
+			if ($TimeText -like "$($DOWstring.key) *") {
+				$DayOffset = $DOWstring.Value - ($CurrentDateTime.DayOfWeek.value__)
+				[string]$CleanedTimeText = ($TimeText -replace("$($DOWstring.key) ")).Trim()
+				break # we can assume there is only one day-of-week prefix string
+			}
+		}
+	}
+	else {
+		[string]$CleanedTimeText = $TimeText
+	}
 
+	return (($CurrentDateTime).Date + (New-TimeSpan -Start ((Get-Date $CleanedTimeText).Date) -End (Get-Date $CleanedTimeText)) + (New-TimeSpan -Days $DayOffset))
+}
 function TimeRangeTextIsValid ([string]$TimeRangeText)
 {
 	Write-Verbose "Checking validity of TimeRangeText: $TimeRangeText"
 
-	if(-not($TimeRange -like "*->*" -or $TimeRange -like "*-*")) {
+	if(-not($TimeRangeText -like "*->*" -or $TimeRangeText -like "*-*")) {
 		Write-Warning "`tWARNING: Did not receive a valid time range. Check the syntax of entry, e.g. '<StartTime> -> <EndTime>'"
 		return $false
 	}
@@ -107,61 +125,26 @@ function CheckScheduleEntry ([string]$TimeRangeText,[datetime]$CurrentDateTime)
 	$midnight = $CurrentDateTime.AddDays(1).Date
     Write-Verbose "Interpreting time range string: $TimeRangeText"
 
-	try
-	{
-	    if(TimeRangeTextIsValid $TimeRangeText)
-	    {
-	        $timeRangeComponents = $TimeRange -split "->" | foreach {$_.Trim()}
-	        if($timeRangeComponents.Count -eq 2)
-	        {
-	            $rangeStart = Get-Date $timeRangeComponents[0]
-                Write-Verbose "Interpreted start time as $rangeStart"
-	            $rangeEnd = Get-Date $timeRangeComponents[1]
-                Write-Verbose "Interpreted end time as $rangeEnd"
+	if(-not(TimeRangeTextIsValid $TimeRangeText)) {return $false}
 
-	            # Check for crossing midnight
-	            if($rangeStart -gt $rangeEnd)
-	            {
-                    # If current time is between the start of range and midnight tonight, interpret start time as earlier today and end time as tomorrow
-                    if($CurrentDateTime -ge $rangeStart -and $CurrentDateTime -lt $midnight)
-                    {
-                        $rangeEnd = $rangeEnd.AddDays(1)
-                    }
-                    # Otherwise interpret start time as yesterday and end time as today
-                    else
-                    {
-                        $rangeStart = $rangeStart.AddDays(-1)
-                    }
-	            }
-	        }
-	        else
-	        {
-	            Write-Warning "`tWARNING: Invalid time range format. Expects valid .Net DateTime-formatted start time and end time separated by '->'"
-	        }
-	    }
-	    else
-	    {
-	        Write-Warning "`tWARNING: Did not receive a valid time range. Check the syntax of entry, e.g. '<StartTime> -> <EndTime>'"
-			return $false
-	    }
-	}
-	catch
-	{
-	    # Record any errors and return false by default
-	    Write-Warning "`tWARNING: Exception encountered while parsing time range. Details: $($_.Exception.Message). Check the syntax of entry, e.g. '<StartTime> -> <EndTime>'"
-	    return $false
-	}
+	$TimeRangeHT = SplitTimeRangeText($TimeRangeText)
 
-	# Check if current time falls within range
-	if($CurrentDateTime -ge $rangeStart -and $CurrentDateTime -le $rangeEnd)
+	$Start = InterpretTimeText($TimeRangeHT.Start,$CurrentDateTime)
+	Write-Verbose "Interpreted start time as $Start"
+	$End = InterpretTimeText($TimeRangeHT.End,$CurrentDateTime)
+	Write-Verbose "Interpreted end time as $End"
+
+	# Check for crossing midnight/Sunday
+	if($rangeStart -gt $rangeEnd)
 	{
-	    return $true
+		# If the start is later than the end, flip the two and take the logical oposite of the result
+		return (-not( $Start -ge $CurrentDateTime -and $End -le $CurrentDateTime ))
 	}
 	else
 	{
-	    return $false
+		# Otherwise, just do a normal comparison
+		return ($Start -le $CurrentDateTime -and $End -ge $CurrentDateTime)
 	}
-
 } # End function CheckScheduleEntry
 
 function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
