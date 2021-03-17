@@ -82,7 +82,7 @@ function InterpretTimeText ([string]$TimeText,[datetime]$CurrentDateTime)
 	else {
 		[string]$CleanedTimeText = $TimeText
 	}
-	
+
 	$TimeText = "$TimeText -0" # So that the Get-Date statements below interpret the string as UTC
 	return (($CurrentDateTime).Date + (New-TimeSpan -Start ((Get-Date $CleanedTimeText).Date) -End (Get-Date $CleanedTimeText)) + (New-TimeSpan -Days $DayOffset))
 }
