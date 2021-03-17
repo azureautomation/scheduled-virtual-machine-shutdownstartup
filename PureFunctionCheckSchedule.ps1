@@ -142,13 +142,16 @@ function CheckScheduleEntry ([string]$TimeRangeText,[datetime]$CurrentDateTime)
 	{
 		# If the start is later than the end, flip the two and take the logical opposite of the result
 		Write-Verbose "Start is later than End, so we are flipping and reversing"
-		return (-not( $Start -ge $CurrentDateTime -and $End -le $CurrentDateTime ))
+		$MatchSuccess = (-not( $Start -ge $CurrentDateTime -and $End -le $CurrentDateTime ))
 	}
 	else
 	{
 		# Otherwise, just do a normal comparison
-		return ($Start -le $CurrentDateTime -and $End -ge $CurrentDateTime)
+		$MatchSuccess = ($Start -le $CurrentDateTime -and $End -ge $CurrentDateTime)
 	}
+	if ($MatchSuccess) {Write-Verbose "Matched against ScheduleEntry $TimeRangeText"}
+	else {Write-Verbose "Did NOT match against ScheduleEntry $TimeRangeText"}
+	return $MatchSuccess
 } # End function CheckScheduleEntry
 
 function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
@@ -162,14 +165,11 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 
     # Check each range against the current time to see if any schedule is matched
     $ScheduleMatched = $false
-    $WhichScheduleMatched = $null
     foreach($entry in $TimeRangeList)
     {
         if((CheckScheduleEntry -TimeRangeText $entry -CurrentDateTime $CurrentDateTime) -eq $true)
         {
-            Write-Verbose "Checking against time range string: $entry"
             $ScheduleMatched = $true
-            $WhichScheduleMatched = $entry
             break
         }
     }
