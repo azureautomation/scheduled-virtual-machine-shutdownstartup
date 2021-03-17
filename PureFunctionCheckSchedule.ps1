@@ -43,8 +43,12 @@ $script:DayOfWeekStrings = @{ # using progressively shorter strings so when used
 function TimeTextStartsWithDayOfWeek ($TimeText)
 {
 	foreach ($DOWstring in $script:DayOfWeekStrings.GetEnumerator()) {
-		if ($TimeText -like "$($DOWstring.key) *") {return $true}
+		if ($TimeText -like "$($DOWstring.key) *") {
+			Write-Verbose "The text '$TimeText' does start with a day of the week"
+			return $true
+		}
 	}
+	Write-Verbose "The text '$TimeText' does NOT start with a day of the week"
 	return $false
 }
 function ValidateTimeText ($TimeText)
@@ -78,7 +82,8 @@ function InterpretTimeText ([string]$TimeText,[datetime]$CurrentDateTime)
 	else {
 		[string]$CleanedTimeText = $TimeText
 	}
-
+	
+	$TimeText = "$TimeText -0" # So that the Get-Date statements below interpret the string as UTC
 	return (($CurrentDateTime).Date + (New-TimeSpan -Start ((Get-Date $CleanedTimeText).Date) -End (Get-Date $CleanedTimeText)) + (New-TimeSpan -Days $DayOffset))
 }
 function TimeRangeTextIsValid ([string]$TimeRangeText)
@@ -98,9 +103,9 @@ function TimeRangeTextIsValid ([string]$TimeRangeText)
 
 	# If a day of week is specified for one end of the time range, it should be specified for the other
 	elseif ( `
-		((TimeTextStartsWithDayOfWeek $TimeRangeText.Start) -and -not(TimeTextStartsWithDayOfWeek $TimeRangeText.End)) `
+		((TimeTextStartsWithDayOfWeek $TimeRangeTextHT.Start) -and -not(TimeTextStartsWithDayOfWeek $TimeRangeTextHT.End)) `
 		-or `
-		(-not(TimeTextStartsWithDayOfWeek $TimeRangeText.Start) -and (TimeTextStartsWithDayOfWeek $TimeRangeText.End)) ) {
+		(-not(TimeTextStartsWithDayOfWeek $TimeRangeTextHT.Start) -and (TimeTextStartsWithDayOfWeek $TimeRangeTextHT.End)) ) {
 		Write-Warning "`tWARNING: Invalid time range format. If you specify the day of week on one side, it should be specified on the other"
 		return $false
 	}
@@ -121,23 +126,22 @@ function TimeRangeTextIsValid ([string]$TimeRangeText)
 function CheckScheduleEntry ([string]$TimeRangeText,[datetime]$CurrentDateTime)
 {
 	# Initialize variables
-	$rangeStart, $rangeEnd, $parsedDay = $null
-	$midnight = $CurrentDateTime.AddDays(1).Date
-    Write-Verbose "Interpreting time range string: $TimeRangeText"
+	Write-Verbose "Interpreting time range string: $TimeRangeText"
 
 	if(-not(TimeRangeTextIsValid $TimeRangeText)) {return $false}
 
 	$TimeRangeHT = SplitTimeRangeText($TimeRangeText)
 
-	$Start = InterpretTimeText($TimeRangeHT.Start,$CurrentDateTime)
+	[datetime]$Start = InterpretTimeText $TimeRangeHT.Start $CurrentDateTime
 	Write-Verbose "Interpreted start time as $Start"
-	$End = InterpretTimeText($TimeRangeHT.End,$CurrentDateTime)
+	[datetime]$End = InterpretTimeText $TimeRangeHT.End $CurrentDateTime
 	Write-Verbose "Interpreted end time as $End"
 
 	# Check for crossing midnight/Sunday
-	if($rangeStart -gt $rangeEnd)
+	if($Start -gt $End)
 	{
-		# If the start is later than the end, flip the two and take the logical oposite of the result
+		# If the start is later than the end, flip the two and take the logical opposite of the result
+		Write-Verbose "Start is later than End, so we are flipping and reversing"
 		return (-not( $Start -ge $CurrentDateTime -and $End -le $CurrentDateTime ))
 	}
 	else
@@ -149,7 +153,8 @@ function CheckScheduleEntry ([string]$TimeRangeText,[datetime]$CurrentDateTime)
 
 function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 {
-    Write-Verbose "Checking ScheduleText against this DateTime UTC = $($CurrentDateTime.ToUniversalTime().ToString())"
+	$CurrentDateTime = $CurrentDateTime.ToUniversalTime()
+    Write-Verbose "Checking ScheduleText against this DateTime UTC = $($CurrentDateTime.ToString())"
     Write-Verbose "ScheduleText = $ScheduleText"
     # Parse the ranges in the Tag value. Expects a string of comma-separated time ranges, or a single time range
     $TimeRangeList = @($ScheduleText -split "," | foreach {$_.Trim()})
