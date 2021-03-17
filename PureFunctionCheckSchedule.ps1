@@ -42,8 +42,8 @@ $script:DayOfWeekStrings = @{ # using progressively shorter strings so when used
 }
 function TimeTextStartsWithDayOfWeek ($TimeText)
 {
-	foreach ($DOWstring in $script:DayOfWeekStrings.GetEnumerator()) {
-		if ($TimeText -like "$($DOWstring.key) *") {
+	foreach ($DowString in $script:DayOfWeekStrings.GetEnumerator()) {
+		if ($TimeText -like "$($DowString.key) *") {
 			Write-Verbose "The text '$TimeText' does start with a day of the week"
 			return $true
 		}
@@ -54,9 +54,9 @@ function TimeTextStartsWithDayOfWeek ($TimeText)
 function ValidateTimeText ($TimeText)
 {
 	if (TimeTextStartsWithDayOfWeek $TimeText) {
-		foreach ($DOWstring in $script:DayOfWeekStrings.GetEnumerator()) {
-			if ($TimeText -like "$($DOWstring.key) *") {
-				$TimeText = ($TimeText -replace("$($DOWstring.key) ")).Trim()
+		foreach ($DowString in $script:DayOfWeekStrings.GetEnumerator()) {
+			if ($TimeText -like "$($DowString.key) *") {
+				$TimeText = ($TimeText -replace("$($DowString.key) ")).Trim()
 				break # only remove one day-of-week prefix because we still want to error out if they put in two day-of-week strings in there
 			}
 		}
@@ -71,10 +71,10 @@ function InterpretTimeText ([string]$TimeText,[datetime]$CurrentDateTime)
 	Write-Verbose "function InterpretTimeText called with TimeText: $TimeText"
 	$DayOffset = 0
 	if (TimeTextStartsWithDayOfWeek $TimeText) {
-		foreach ($DOWstring in $script:DayOfWeekStrings.GetEnumerator()) {
-			if ($TimeText -like "$($DOWstring.key) *") {
-				$DayOffset = $DOWstring.Value - ($CurrentDateTime.DayOfWeek.value__)
-				[string]$CleanedTimeText = ($TimeText -replace("$($DOWstring.key) ")).Trim()
+		foreach ($DowString in $script:DayOfWeekStrings.GetEnumerator()) {
+			if ($TimeText -like "$($DowString.key) *") {
+				$DayOffset = $DowString.Value - ($CurrentDateTime.DayOfWeek.value__)
+				[string]$CleanedTimeText = ($TimeText -replace("$($DowString.key) ")).Trim()
 				break # we can assume there is only one day-of-week prefix string
 			}
 		}
