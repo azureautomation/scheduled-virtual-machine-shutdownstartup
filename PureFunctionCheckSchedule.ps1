@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param (
     [string]$ScriptScheduleText,
-    [datetime]$ScriptCurrentDateTime
+    [datetime]$ScriptCurrentDateTime = (Get-Date)
 )
 
 function Main
