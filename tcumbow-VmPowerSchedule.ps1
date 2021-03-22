@@ -1,4 +1,4 @@
-﻿# Tom Cumbow
+# Tom Cumbow
 
 param(
     [parameter(Mandatory=$false)]
@@ -52,7 +52,7 @@ function Log
 	}
 
 	if ($Error) {Write-Error $Text}
-	elseif ($Warning) {Log -Warning $Text}
+	elseif ($Warning) {Write-Warning $Text}
 	else {Write-Verbose $Text}
 
 	$HashTable = @{}
