@@ -7,7 +7,7 @@ param(
     [switch]$DevMode
 )
 
-$VERSION = "0.0.4"
+$ScriptVersion = "0.0.5"
 
 if ($DevMode) {
     $GLOBAL:VerbosePreference = "Continue"
@@ -59,6 +59,7 @@ function Log
     $HashTable.Add("Text",$Text)
     $HashTable.Add("Level",$(if($Error){"Error"}elseif($Warning){"Warning"}else{"Verbose"}))
 	$HashTable.Add("ScriptName",(Split-Path $PSCommandPath -Leaf))
+	$HashTable.Add("ScriptVersion",$ScriptVersion)
 	UpsertTableEntity -TableName "RunbookLogs" -RowKey ([guid]::NewGuid().ToString()) -Entity $HashTable
 }
 
@@ -287,7 +288,7 @@ function AssertVirtualMachinePowerState
 try
 {
     $currentTime = (Get-Date).ToUniversalTime()
-    Log "Runbook started. Version: $VERSION"
+    Log "Runbook started. Version: $ScriptVersion"
     if($Simulate)
     {
         Log "*** Running in SIMULATE mode. No power actions will be taken. ***"
