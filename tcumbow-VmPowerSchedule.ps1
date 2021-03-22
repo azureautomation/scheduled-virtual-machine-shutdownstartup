@@ -375,6 +375,7 @@ try
 catch
 {
     $errorMessage = $_.Exception.Message
+	Log -Error "SEVERE Unexpected exception: $errorMessage"
     throw "Unexpected exception: $errorMessage"
 }
 finally
