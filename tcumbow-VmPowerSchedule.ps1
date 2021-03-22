@@ -19,6 +19,49 @@ if ($DevMode) {
     }
 }
 
+# This is a custom function for logging - this is a workaround for the failed logging in Azure Runbooks
+function Log
+{
+	[CmdletBinding()]
+	param (
+		[Parameter(Mandatory=$true,ValueFromPipeline)]
+		[string]
+		$Text,
+		[Parameter(Mandatory=$false)]
+		[switch]
+		$Warning,
+		[Parameter(Mandatory=$false)]
+		[switch]
+		$Error
+	)
+	function UpsertTableEntity($TableName, $RowKey, $Entity) {
+		$StorageAccount = "tcumbowdartsandbox"
+		$SasToken = "?st=2021-03-21T14%3A52%3A00Z&se=2042-03-23T14%3A52%3A00Z&sp=rau&sv=2018-03-28&tn=runbooklogs&sig=jG6lhLojZ%2F74SJllghtxHuvasLiruIK0hCP%2FSJn8igY%3D"
+		$version = "2017-04-17"
+		$PartitionKey = ((get-date -format "yyyyMM").ToString())
+		$resource = "$tableName(PartitionKey='$PartitionKey',RowKey='$RowKey')$SasToken"
+		$table_url = "https://$StorageAccount.table.core.windows.net/$resource"
+		$GMTTime = (Get-Date).ToUniversalTime().toString('R')
+		$headers = @{
+			'x-ms-date'    = $GMTTime
+			"x-ms-version" = $version
+			Accept         = "application/json;odata=fullmetadata"
+		}
+		$body = $Entity | ConvertTo-Json
+		$item = Invoke-RestMethod -Method MERGE -Uri $table_url -Headers $headers -Body $body -ContentType application/json
+	}
+
+	if ($Error) {Write-Error $Text}
+	elseif ($Warning) {Log -Warning $Text}
+	else {Write-Verbose $Text}
+
+	$HashTable = @{}
+    $HashTable.Add("Text",$Text)
+    $HashTable.Add("Level",$(if($Error){"Error"}elseif($Warning){"Warning"}else{"Verbose"}))
+	$HashTable.Add("ScriptName",(Split-Path $PSCommandPath -Leaf))
+	UpsertTableEntity -TableName "RunbookLogs" -RowKey ([guid]::NewGuid().ToString()) -Entity $HashTable
+}
+
 # Define function to handle checking the ScheduleText against a given DateTime (which will probably be the current DateTime in most cases)
 # This function contains nested functions so that you can collapse all the date/time logic more easily
 function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
@@ -58,11 +101,11 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 	{
 		foreach ($DowString in $script:DayOfWeekStrings.GetEnumerator()) {
 			if ($TimeText -like "$($DowString.key) *") {
-				Write-Verbose "The text '$TimeText' does start with a day of the week"
+				Log "The text '$TimeText' does start with a day of the week"
 				return $true
 			}
 		}
-		Write-Verbose "The text '$TimeText' does NOT start with a day of the week"
+		Log "The text '$TimeText' does NOT start with a day of the week"
 		return $false
 	}
 	function ValidateTimeText ($TimeText)
@@ -82,7 +125,7 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 	}
 	function InterpretTimeText ([string]$TimeText,[datetime]$CurrentDateTime)
 	{
-		Write-Verbose "function InterpretTimeText called with TimeText: $TimeText"
+		Log "function InterpretTimeText called with TimeText: $TimeText"
 		$DayOffset = 0
 		if (TimeTextStartsWithDayOfWeek $TimeText) {
 			foreach ($DowString in $script:DayOfWeekStrings.GetEnumerator()) {
@@ -102,16 +145,16 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 	}
 	function TimeRangeTextIsValid ([string]$TimeRangeText)
 	{
-		Write-Verbose "Checking validity of TimeRangeText: $TimeRangeText"
+		Log "Checking validity of TimeRangeText: $TimeRangeText"
 
 		if(-not($TimeRangeText -like "*->*" -or $TimeRangeText -like "*-*")) {
-			Write-Warning "`tWARNING: Did not receive a valid time range. Check the syntax of entry, e.g. '<StartTime> -> <EndTime>'"
+			Log -Warning "`tWARNING: Did not receive a valid time range. Check the syntax of entry, e.g. '<StartTime> -> <EndTime>'"
 			return $false
 		}
 
 		$TimeRangeTextHT = SplitTimeRangeText $TimeRangeText
 		if ($null -eq $TimeRangeTextHT) {
-			Write-Warning "`tWARNING: Invalid time range format. Expects valid .Net DateTime-formatted start time and end time separated by '->'"
+			Log -Warning "`tWARNING: Invalid time range format. Expects valid .Net DateTime-formatted start time and end time separated by '->'"
 			return $false
 		}
 
@@ -120,40 +163,40 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 			((TimeTextStartsWithDayOfWeek $TimeRangeTextHT.Start) -and -not(TimeTextStartsWithDayOfWeek $TimeRangeTextHT.End)) `
 			-or `
 			(-not(TimeTextStartsWithDayOfWeek $TimeRangeTextHT.Start) -and (TimeTextStartsWithDayOfWeek $TimeRangeTextHT.End)) ) {
-			Write-Warning "`tWARNING: Invalid time range format. If you specify the day of week on one side, it should be specified on the other"
+			Log -Warning "`tWARNING: Invalid time range format. If you specify the day of week on one side, it should be specified on the other"
 			return $false
 		}
 
 		# Make sure each end of the time range can be interpreted as a date/time
 		elseif ((-not(ValidateTimeText $TimeRangeTextHT.Start)) -or (-not(ValidateTimeText $TimeRangeTextHT.End))) {
-			Write-Warning "`tWARNING: Invalid time range format. Expects valid .Net DateTime-formatted start time and end time separated by '->'"
+			Log -Warning "`tWARNING: Invalid time range format. Expects valid .Net DateTime-formatted start time and end time separated by '->'"
 			return $false
 		}
 
 		else {
-			Write-Verbose "TimeRangeText was determined to be valid"
+			Log "TimeRangeText was determined to be valid"
 			return $true
 		}
 	}
 	function CheckScheduleEntry ([string]$TimeRangeText,[datetime]$CurrentDateTime)
 	{
 		# Initialize variables
-		Write-Verbose "Interpreting time range string: $TimeRangeText"
+		Log "Interpreting time range string: $TimeRangeText"
 
 		if(-not(TimeRangeTextIsValid $TimeRangeText)) {return $false}
 
 		$TimeRangeHT = SplitTimeRangeText($TimeRangeText)
 
 		[datetime]$Start = InterpretTimeText $TimeRangeHT.Start $CurrentDateTime
-		Write-Verbose "Interpreted start time as $Start"
+		Log "Interpreted start time as $Start"
 		[datetime]$End = InterpretTimeText $TimeRangeHT.End $CurrentDateTime
-		Write-Verbose "Interpreted end time as $End"
+		Log "Interpreted end time as $End"
 
 		# Check for crossing midnight/Sunday
 		if($Start -gt $End)
 		{
 			# If the start is later than the end, flip the two and take the logical opposite of the result
-			Write-Verbose "Start is later than End, so we are flipping and reversing"
+			Log "Start is later than End, so we are flipping and reversing"
 			$MatchSuccess = (-not( $Start -ge $CurrentDateTime -and $End -le $CurrentDateTime ))
 		}
 		else
@@ -161,17 +204,17 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 			# Otherwise, just do a normal comparison
 			$MatchSuccess = ($Start -le $CurrentDateTime -and $End -ge $CurrentDateTime)
 		}
-		if ($MatchSuccess) {Write-Verbose "Matched against ScheduleEntry $TimeRangeText"}
-		else {Write-Verbose "Did NOT match against ScheduleEntry $TimeRangeText"}
+		if ($MatchSuccess) {Log "Matched against ScheduleEntry $TimeRangeText"}
+		else {Log "Did NOT match against ScheduleEntry $TimeRangeText"}
 		return $MatchSuccess
 	} # End function CheckScheduleEntry
 
 	$CurrentDateTime = $CurrentDateTime.ToUniversalTime()
-    Write-Verbose "Checking ScheduleText against this DateTime UTC = $($CurrentDateTime.ToString())"
-    Write-Verbose "ScheduleText = $ScheduleText"
+    Log "Checking ScheduleText against this DateTime UTC = $($CurrentDateTime.ToString())"
+    Log "ScheduleText = $ScheduleText"
     # Parse the ranges in the Tag value. Expects a string of comma-separated time ranges, or a single time range
     $TimeRangeList = @($ScheduleText -split "," | foreach {$_.Trim()})
-    Write-Verbose "Split ScheduleText into $($TimeRangeList.Count) time ranges"
+    Log "Split ScheduleText into $($TimeRangeList.Count) time ranges"
 
     # Check each range against the current time to see if any schedule is matched
     $ScheduleMatched = $false
@@ -183,7 +226,7 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
             break
         }
     }
-	if ($ScheduleMatched) {Write-Verbose "Schedule matched"} else {Write-Verbose "Schedule did not match"}
+	if ($ScheduleMatched) {Log "Schedule matched"} else {Log "Schedule did not match"}
 	return $ScheduleMatched
 }
 
@@ -203,19 +246,19 @@ function AssertVirtualMachinePowerState
 
     # Get VM with current status
     $currentStatus = Get-VmPowerState $vm
-    Write-Verbose "[$($vm.Name)]: Current power state is [$currentStatus]"
+    Log "[$($vm.Name)]: Current power state is [$currentStatus]"
 
     # If should be started and isn't, start VM
 	if($DesiredState -eq "Started" -and $currentStatus -notmatch "running")
 	{
         if($Simulate)
         {
-            Write-Warning "[$($vm.Name)]: SIMULATION -- Would have started VM. (No action taken)"
+            Log -Warning "[$($vm.Name)]: SIMULATION -- Would have started VM. (No action taken)"
         }
         else
         {
-            Write-Warning "[$($vm.Name)]: Starting VM"
-            Start-AzVM -Id $vm.Id | Write-Verbose
+            Log -Warning "[$($vm.Name)]: Starting VM"
+            Start-AzVM -Id $vm.Id | Log
         }
 	}
 
@@ -224,19 +267,19 @@ function AssertVirtualMachinePowerState
 	{
         if($Simulate)
         {
-            Write-Warning "[$($vm.Name)]: SIMULATION -- Would have stopped VM. (No action taken)"
+            Log -Warning "[$($vm.Name)]: SIMULATION -- Would have stopped VM. (No action taken)"
         }
         else
         {
-            Write-Warning "[$($vm.Name)]: Stopping VM"
-            Stop-AzVM -Id $vm.Id -Force | Write-Verbose
+            Log -Warning "[$($vm.Name)]: Stopping VM"
+            Stop-AzVM -Id $vm.Id -Force | Log
         }
 	}
 
     # Otherwise, current power state is correct
     else
     {
-        Write-Verbose "[$($vm.Name)]: Current power state [$currentStatus] is correct."
+        Log "[$($vm.Name)]: Current power state [$currentStatus] is correct."
     }
 }
 
@@ -244,16 +287,16 @@ function AssertVirtualMachinePowerState
 try
 {
     $currentTime = (Get-Date).ToUniversalTime()
-    Write-Verbose "Runbook started. Version: $VERSION"
+    Log "Runbook started. Version: $VERSION"
     if($Simulate)
     {
-        Write-Verbose "*** Running in SIMULATE mode. No power actions will be taken. ***"
+        Log "*** Running in SIMULATE mode. No power actions will be taken. ***"
     }
     else
     {
-        Write-Verbose "*** Running in LIVE mode. Schedules will be enforced. ***"
+        Log "*** Running in LIVE mode. Schedules will be enforced. ***"
     }
-    Write-Verbose "Current UTC/GMT time [$($currentTime.ToString("dddd, yyyy MMM dd HH:mm:ss"))] will be checked against schedules"
+    Log "Current UTC/GMT time [$($currentTime.ToString("dddd, yyyy MMM dd HH:mm:ss"))] will be checked against schedules"
 
     # Retrieve subscription name from variable asset if not specified
     if($AzureSubscriptionName -eq "Use *Default Azure Subscription* Variable Value")
@@ -261,7 +304,7 @@ try
         $AzureSubscriptionName = Get-AutomationVariable -Name "Default Azure Subscription"
         if($AzureSubscriptionName.length -gt 0)
         {
-            Write-Verbose "Specified subscription name/ID: [$AzureSubscriptionName]"
+            Log "Specified subscription name/ID: [$AzureSubscriptionName]"
         }
         else
         {
@@ -274,18 +317,18 @@ try
         $connectionName = "AzureRunAsConnection"
         $servicePrincipalConnection=Get-AutomationConnection -Name $connectionName
         $DummyVariable = $(Add-AzAccount -ServicePrincipal -TenantId $servicePrincipalConnection.TenantId -ApplicationId $servicePrincipalConnection.ApplicationId -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint)
-        Write-Verbose "Successfully logged into Azure subscription using Az cmdlets..."
+        Log "Successfully logged into Azure subscription using Az cmdlets..."
     }
 
     # Get a list of all virtual machines in subscription
-    Write-Verbose "Getting all the VMs from the subscription..."
+    Log "Getting all the VMs from the subscription..."
     $AllVMs = Get-AzResource -ResourceType "Microsoft.Compute/virtualMachines"
 
     # For each VM, determine
     #  - Is it directly tagged for shutdown
     #  - Is the current time within the tagged schedule
     # Then assert its correct power state based on the assigned schedule (if present)
-    Write-Verbose "Processing [$($AllVMs.Count)] virtual machines found in subscription"
+    Log "Processing [$($AllVMs.Count)] virtual machines found in subscription"
     foreach($vm in $AllVMs)
     {
         $schedule = $null
@@ -295,19 +338,19 @@ try
         {
             # VM has direct tag
             $schedule = $vm.Tags.AutoShutdownSchedule
-            Write-Verbose "[$($vm.Name)]: Found direct VM schedule tag with value: $schedule"
+            Log "[$($vm.Name)]: Found direct VM schedule tag with value: $schedule"
         }
         else
         {
             # No tag. Skip this VM.
-            Write-Verbose "[$($vm.Name)]: Not tagged for shutdown. Skipping this VM."
+            Log "[$($vm.Name)]: Not tagged for shutdown. Skipping this VM."
             continue
         }
 
         # Check that tag value was successfully obtained
         if($null -eq $schedule)
         {
-            Write-Warning "[$($vm.Name)]: Failed to get tagged schedule for virtual machine. Skipping this VM."
+            Log -Warning "[$($vm.Name)]: Failed to get tagged schedule for virtual machine. Skipping this VM."
             continue
         }
 
@@ -327,7 +370,7 @@ try
 		}
     }
 
-    Write-Verbose "Finished processing virtual machine schedules"
+    Log "Finished processing virtual machine schedules"
 }
 catch
 {
@@ -336,5 +379,5 @@ catch
 }
 finally
 {
-    Write-Verbose "Runbook finished (Duration: $(("{0:hh\:mm\:ss}" -f ((Get-Date).ToUniversalTime() - $currentTime))))"
+    Log "Runbook finished (Duration: $(("{0:hh\:mm\:ss}" -f ((Get-Date).ToUniversalTime() - $currentTime))))"
 }
