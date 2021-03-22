@@ -7,7 +7,8 @@ param(
     [switch]$DevMode
 )
 
-$ScriptVersion = "0.0.5"
+$ScriptVersion = "0.0.6"
+$ScriptName = ".\tcumbow-VmPowerSchedule.ps1"
 
 if ($DevMode) {
     $GLOBAL:VerbosePreference = "Continue"
@@ -58,7 +59,7 @@ function Log
 	$HashTable = @{}
     $HashTable.Add("Text",$Text)
     $HashTable.Add("Level",$(if($Error){"Error"}elseif($Warning){"Warning"}else{"Verbose"}))
-	$HashTable.Add("ScriptName",(Split-Path $PSCommandPath -Leaf))
+	$HashTable.Add("ScriptName",$ScriptName)
 	$HashTable.Add("ScriptVersion",$ScriptVersion)
 	UpsertTableEntity -TableName "RunbookLogs" -RowKey ([guid]::NewGuid().ToString()) -Entity $HashTable
 }
