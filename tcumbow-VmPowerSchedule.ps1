@@ -1,4 +1,4 @@
-# Tom Cumbow
+﻿# Tom Cumbow
 
 param(
     [parameter(Mandatory=$false)]
@@ -78,10 +78,13 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 			$TimeZoneID = "UTC";$DateTimeStringCleaned = $DateTimeString
 		}
 		Log "Interpreted $DateTimeString as $DateTimeStringCleaned in $TimeZoneID"
-		return ([System.TimeZoneInfo]::ConvertTimeToUtc((Get-Date $DateTimeStringCleaned),[System.TimeZoneInfo]::FindSystemTimeZoneById($TimeZoneID)))
+		$ReturnVal = ([System.TimeZoneInfo]::ConvertTimeToUtc((Get-Date $DateTimeStringCleaned),[System.TimeZoneInfo]::FindSystemTimeZoneById($TimeZoneID)))
+        Log "Which is $ReturnVal in UTC (disregard the date)"
+        return $ReturnVal
 	}
 	function ConvertDowNumberAndTimeStringToUtcDowNumber ($DowNumber,[string]$DateTimeString,[datetime]$CurrentDateTime)
 	{
+        Log "ConvertDowNumber called with $DowNumber $DateTimeString $CurrentDateTime"
 		if ($DateTimeString -like "*est") {$TimeZoneID = "Eastern Standard Time";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
 		elseif ($DateTimeString -like "*cst") {$TimeZoneID = "Central Standard Time";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
 		elseif ($DateTimeString -like "*utc") {$TimeZoneID = "UTC";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
@@ -90,9 +93,10 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 			$TimeZoneID = "UTC";$DateTimeStringCleaned = $DateTimeString
 		}
 		Log "Interpreted $DateTimeString as $DateTimeStringCleaned in $TimeZoneID"
-        $DowOffset = $DowNumber - ($CurrentDateTime.DayOfWeek.value__)
+        $DowOffset = $DowNumber - ((Get-Date).DayOfWeek.value__)
         $ConvertedDateTime = ([System.TimeZoneInfo]::ConvertTimeToUtc(((Get-Date $DateTimeStringCleaned)+(New-TimeSpan -days $DowOffset)),[System.TimeZoneInfo]::FindSystemTimeZoneById($TimeZoneID)))
-        return ($ConvertedDateTime.DayOfWeek.value__)
+        $ReturnVal = ($ConvertedDateTime.DayOfWeek.value__)
+        return $ReturnVal
 	}
 	function SplitTimeRangeText ([string]$TimeRangeText)
 	{
@@ -158,9 +162,9 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 		if (TimeTextStartsWithDayOfWeek $TimeText) {
 			foreach ($DowString in $script:DayOfWeekStrings.GetEnumerator()) {
 				if ($TimeText -like "$($DowString.key) *") {
-					$ConvertedDowNumber = ConvertDowNumberAndTimeStringToUtcDowNumber ($DowString.Value) $TimeText
-					$DayOffset = $ConvertedDowNumber - ($CurrentDateTime.DayOfWeek.value__)
 					[string]$CleanedTimeText = ($TimeText -replace("$($DowString.key) ")).Trim()
+					$ConvertedDowNumber = ConvertDowNumberAndTimeStringToUtcDowNumber ($DowString.Value) $CleanedTimeText $CurrentDateTime
+					$DayOffset = $ConvertedDowNumber - ($CurrentDateTime.DayOfWeek.value__)
 					break # we can assume there is only one day-of-week prefix string
 				}
 			}
