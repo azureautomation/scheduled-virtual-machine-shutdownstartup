@@ -7,7 +7,7 @@ param(
     [switch]$DevMode
 )
 
-$ScriptVersion = "0.0.6"
+$ScriptVersion = "0.1.0"
 $ScriptName = ".\tcumbow-VmPowerSchedule.ps1"
 
 if ($DevMode) {
@@ -271,7 +271,7 @@ function AssertVirtualMachinePowerState
         else
         {
             Log -Warning "[$($vm.Name)]: Starting VM"
-            Start-AzVM -Id $vm.Id | Log
+            Start-Job {Start-AzVM -Id $Using:vm.Id}
         }
 	}
 
@@ -285,7 +285,7 @@ function AssertVirtualMachinePowerState
         else
         {
             Log -Warning "[$($vm.Name)]: Stopping VM"
-            Stop-AzVM -Id $vm.Id -Force | Log
+            Start-Job {Stop-AzVM -Id $Using:vm.Id -Force}
         }
 	}
 
@@ -345,13 +345,22 @@ try
     foreach($vm in $AllVMs)
     {
         $schedule = $null
+		$scheduleTypeIsShutdown = $null
 
         # Check for tag
-        if($vm.ResourceType -eq "Microsoft.Compute/virtualMachines" -and $vm.Tags.AutoShutdownSchedule)
+		if($vm.ResourceType -eq "Microsoft.Compute/virtualMachines" -and $vm.Tags.AutoPowerSchedule)
+		{
+			# VM has Power tag
+			$schedule = $vm.Tags.AutoPowerSchedule
+			Log "[$($vm.Name)]: Found VM power schedule tag with value: $schedule"
+			$scheduleTypeIsShutdown = $false
+		}
+        elseif($vm.ResourceType -eq "Microsoft.Compute/virtualMachines" -and $vm.Tags.AutoShutdownSchedule)
         {
-            # VM has direct tag
+            # VM has Shutdown tag
             $schedule = $vm.Tags.AutoShutdownSchedule
-            Log "[$($vm.Name)]: Found direct VM schedule tag with value: $schedule"
+            Log "[$($vm.Name)]: Found VM shutdown schedule tag with value: $schedule"
+			$scheduleTypeIsShutdown = $true
         }
         else
         {
@@ -370,16 +379,19 @@ try
         # Call function that handles the whole interpretation of the schedule text (which contains 1 or more time ranges)
 		$scheduleMatched = CheckSchedule $schedule $currentTime
 
+		# Flip result if this is a shutdown tag
+		if ($scheduleTypeIsShutdown) {$scheduleMatched = (-not $scheduleMatched)}
+
         # Enforce desired state for group resources based on result.
 		if($scheduleMatched)
 		{
-            # Schedule is matched. Shut down the VM if it is running.
-		    AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "StoppedDeallocated" -Simulate $Simulate
+			# Schedule not matched. Start VM if stopped.
+			AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "Started" -Simulate $Simulate
 		}
 		else
 		{
-            # Schedule not matched. Start VM if stopped.
-		    AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "Started" -Simulate $Simulate
+			# Schedule is matched. Shut down the VM if it is running.
+			AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "StoppedDeallocated" -Simulate $Simulate
 		}
     }
 
