@@ -1,4 +1,4 @@
-# Tom Cumbow
+﻿# Tom Cumbow
 
 param(
     [parameter(Mandatory=$false)]
@@ -68,6 +68,18 @@ function Log
 # This function contains nested functions so that you can collapse all the date/time logic more easily
 function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 {
+	function ConvertTimeStringWithTimeZoneToUtc ([string]$DateTimeString)
+	{
+		if ($DateTimeString -like "*est") {$TimeZoneID = "Eastern Standard Time";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
+		elseif ($DateTimeString -like "*cst") {$TimeZoneID = "Central Standard Time";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
+		elseif ($DateTimeString -like "*utc") {$TimeZoneID = "UTC";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
+		else {
+			Log -Warning "No timezone specified, interpreting as UTC by default"
+			$TimeZoneID = "UTC";$DateTimeStringCleaned = $DateTimeString
+		}
+		Log "Interpreted $DateTimeString as $DateTimeStringCleaned in $TimeZoneID"
+		return ([System.TimeZoneInfo]::ConvertTimeToUtc((Get-Date $DateTimeStringCleaned),[System.TimeZoneInfo]::FindSystemTimeZoneById($TimeZoneID)))
+	}
 	function SplitTimeRangeText ([string]$TimeRangeText)
 	{
 		$timeRangeComponents = $TimeRangeText -split "->" | foreach {$_.Trim()}
@@ -122,7 +134,7 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 		}
 
 		$ConvertedDateTime = $null
-		$ConvertedDateTime = Get-Date -Date $TimeText
+		$ConvertedDateTime = ConvertTimeStringWithTimeZoneToUtc $TimeText
 		return (-not($null -eq $ConvertedDateTime))
 	}
 	function InterpretTimeText ([string]$TimeText,[datetime]$CurrentDateTime)
@@ -142,8 +154,7 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 			[string]$CleanedTimeText = $TimeText
 		}
 
-		$TimeText = "$TimeText -0" # So that the Get-Date statements below interpret the string as UTC
-		return (($CurrentDateTime).Date + (New-TimeSpan -Start ((Get-Date $CleanedTimeText).Date) -End (Get-Date $CleanedTimeText)) + (New-TimeSpan -Days $DayOffset))
+		return (($CurrentDateTime).Date + (New-TimeSpan -Start ((ConvertTimeStringWithTimeZoneToUtc $CleanedTimeText).Date) -End (ConvertTimeStringWithTimeZoneToUtc $CleanedTimeText)) + (New-TimeSpan -Days $DayOffset))
 	}
 	function TimeRangeTextIsValid ([string]$TimeRangeText)
 	{
