@@ -1,4 +1,4 @@
-﻿# Tom Cumbow
+# Tom Cumbow
 
 param(
     [parameter(Mandatory=$false)]
@@ -374,13 +374,13 @@ try
         # Enforce desired state for group resources based on result.
 		if($scheduleMatched)
 		{
-            # Schedule is matched. Shut down the VM if it is running.
-		    AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "StoppedDeallocated" -Simulate $Simulate
+			# Schedule not matched. Start VM if stopped.
+			AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "Started" -Simulate $Simulate
 		}
 		else
 		{
-            # Schedule not matched. Start VM if stopped.
-		    AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "Started" -Simulate $Simulate
+			# Schedule is matched. Shut down the VM if it is running.
+			AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "StoppedDeallocated" -Simulate $Simulate
 		}
     }
 
