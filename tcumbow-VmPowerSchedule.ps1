@@ -260,7 +260,7 @@ function AssertVirtualMachinePowerState
         else
         {
             Log -Warning "[$($vm.Name)]: Starting VM"
-            Start-AzVM -Id $vm.Id | Log
+            Start-Job {Start-AzVM -Id $Using:vm.Id}
         }
 	}
 
@@ -274,7 +274,7 @@ function AssertVirtualMachinePowerState
         else
         {
             Log -Warning "[$($vm.Name)]: Stopping VM"
-            Stop-AzVM -Id $vm.Id -Force | Log
+            Start-Job {Stop-AzVM -Id $Using:vm.Id -Force}
         }
 	}
 
