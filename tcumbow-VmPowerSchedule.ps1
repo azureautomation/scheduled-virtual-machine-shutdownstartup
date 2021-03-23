@@ -80,6 +80,19 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 		Log "Interpreted $DateTimeString as $DateTimeStringCleaned in $TimeZoneID"
 		return ([System.TimeZoneInfo]::ConvertTimeToUtc((Get-Date $DateTimeStringCleaned),[System.TimeZoneInfo]::FindSystemTimeZoneById($TimeZoneID)))
 	}
+	function ConvertDowNumberAndTimeStringToUtcDowNumber ($DowNumber,[string]$DateTimeString)
+	{
+		if ($DateTimeString -like "*est") {$TimeZoneID = "Eastern Standard Time";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
+		elseif ($DateTimeString -like "*cst") {$TimeZoneID = "Central Standard Time";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
+		elseif ($DateTimeString -like "*utc") {$TimeZoneID = "UTC";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
+		else {
+			Log -Warning "No timezone specified, interpreting as UTC by default"
+			$TimeZoneID = "UTC";$DateTimeStringCleaned = $DateTimeString
+		}
+		Log "Interpreted $DateTimeString as $DateTimeStringCleaned in $TimeZoneID"
+		$ConvertedDateTime = ([System.TimeZoneInfo]::ConvertTimeToUtc((Get-Date $DateTimeStringCleaned),[System.TimeZoneInfo]::FindSystemTimeZoneById($TimeZoneID)))
+		return ($ConvertedDateTime.DayOfWeek)
+	}
 	function SplitTimeRangeText ([string]$TimeRangeText)
 	{
 		$timeRangeComponents = $TimeRangeText -split "->" | foreach {$_.Trim()}
@@ -144,7 +157,8 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 		if (TimeTextStartsWithDayOfWeek $TimeText) {
 			foreach ($DowString in $script:DayOfWeekStrings.GetEnumerator()) {
 				if ($TimeText -like "$($DowString.key) *") {
-					$DayOffset = $DowString.Value - ($CurrentDateTime.DayOfWeek.value__)
+					$ConvertedDowNumber = ConvertDowNumberAndTimeStringToUtcDowNumber ($DowString.Value) $TimeText
+					$DayOffset = $ConvertedDowNumber - ($CurrentDateTime.DayOfWeek.value__)
 					[string]$CleanedTimeText = ($TimeText -replace("$($DowString.key) ")).Trim()
 					break # we can assume there is only one day-of-week prefix string
 				}
