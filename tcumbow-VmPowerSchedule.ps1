@@ -1,4 +1,4 @@
-﻿# Tom Cumbow
+# Tom Cumbow
 
 param(
     [parameter(Mandatory=$false)]
@@ -80,7 +80,7 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 		Log "Interpreted $DateTimeString as $DateTimeStringCleaned in $TimeZoneID"
 		return ([System.TimeZoneInfo]::ConvertTimeToUtc((Get-Date $DateTimeStringCleaned),[System.TimeZoneInfo]::FindSystemTimeZoneById($TimeZoneID)))
 	}
-	function ConvertDowNumberAndTimeStringToUtcDowNumber ($DowNumber,[string]$DateTimeString)
+	function ConvertDowNumberAndTimeStringToUtcDowNumber ($DowNumber,[string]$DateTimeString,[datetime]$CurrentDateTime)
 	{
 		if ($DateTimeString -like "*est") {$TimeZoneID = "Eastern Standard Time";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
 		elseif ($DateTimeString -like "*cst") {$TimeZoneID = "Central Standard Time";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
@@ -90,8 +90,9 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 			$TimeZoneID = "UTC";$DateTimeStringCleaned = $DateTimeString
 		}
 		Log "Interpreted $DateTimeString as $DateTimeStringCleaned in $TimeZoneID"
-		$ConvertedDateTime = ([System.TimeZoneInfo]::ConvertTimeToUtc((Get-Date $DateTimeStringCleaned),[System.TimeZoneInfo]::FindSystemTimeZoneById($TimeZoneID)))
-		return ($ConvertedDateTime.DayOfWeek)
+        $DowOffset = $DowNumber - ($CurrentDateTime.DayOfWeek.value__)
+        $ConvertedDateTime = ([System.TimeZoneInfo]::ConvertTimeToUtc(((Get-Date $DateTimeStringCleaned)+(New-TimeSpan -days $DowOffset)),[System.TimeZoneInfo]::FindSystemTimeZoneById($TimeZoneID)))
+        return ($ConvertedDateTime.DayOfWeek.value__)
 	}
 	function SplitTimeRangeText ([string]$TimeRangeText)
 	{
