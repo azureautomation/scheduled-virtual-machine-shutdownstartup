@@ -356,8 +356,8 @@ try
             continue
         }
 
-        # Call function that handles the whole interpretation of the text which contains 1 or more time ranges
-		$scheduleMatched = CheckSchedule $schedule (Get-Date)
+        # Call function that handles the whole interpretation of the schedule text (which contains 1 or more time ranges)
+		$scheduleMatched = CheckSchedule $schedule $currentTime
 
         # Enforce desired state for group resources based on result.
 		if($scheduleMatched)
