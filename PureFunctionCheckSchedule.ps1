@@ -175,23 +175,12 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 		else {Log "Did NOT match against ScheduleEntry $TimeRangeText"}
 		return $MatchSuccess
 	} # End function CheckScheduleEntry
-	$NextDayOfWeek = @{
-		"Monday" = "Tuesday";
-		"Tuesday" = "Wednesday";
-		"Wednesday" = "Thursday";
-		"Thursday" = "Friday";
-		"Friday" = "Saturday";
-		"Saturday" = "Sunday";
-		"Sunday" = "Monday"
-	}
 	function InsertPrefixOnBothSidesOfTimeRange ([string]$Prefix,[string]$SourceText)
 	{
 		$TimeRangeHT = SplitTimeRangeText $SourceText
-		if ((Get-Date ($TimeRangeHT.Start)) -gt (Get-Date ($TimeRangeHT.End))) {
-			Write-Host "--------------"
-			$PrefixPlusOneDay = $NextDayOfWeek[$Prefix]
-			Write-Host $PrefixPlusOneDay
-			$NewText = "$Prefix $($TimeRangeHT.Start) -> $PrefixPlusOneDay $($TimeRangeHT.End)"
+		if ((ConvertTimeStringWithTimeZoneToUtc ($TimeRangeHT.Start) ) -gt (ConvertTimeStringWithTimeZoneToUtc ($TimeRangeHT.End))) {
+			Log -Error "Cannot tolerate Start times that are greater than End times when using 'weekdays'"
+			$NewText = $null
 		}
 		else {
 			$NewText = "$Prefix $($TimeRangeHT.Start) -> $Prefix $($TimeRangeHT.End)"
@@ -209,9 +198,7 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 	# Check for "weekdays" prefix and, if found, explode into time ranges for M-F
 	$ExplodedTimeRangeList = @()
 	foreach ($entry in $TimeRangeList) {
-		Write-Host "asdf $entry"
 		if ($entry -like "weekdays *") {
-			Write-Host "blarg"
 			Log "Exploding weekdays into ranges for M-F"
 			$entryCleaned = $entry -replace("weekdays ")
 			$ExplodedTimeRangeList += InsertPrefixOnBothSidesOfTimeRange "Monday" $entryCleaned
@@ -240,4 +227,4 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 	return $ScheduleMatched
 }
 
-CheckSchedule "weekdays 11:00PM EST -> 2:00AM EST" (get-date)
+CheckSchedule "weekdays 1:00AM EST -> 5:00AM EST" (get-date)
