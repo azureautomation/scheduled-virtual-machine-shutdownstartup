@@ -241,6 +241,13 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 		return $MatchSuccess
 	} # End function CheckScheduleEntry
 
+	function InsertPrefixOnBothSidesOfTimeRange ([string]$Prefix,[string]$SourceText)
+	{
+		$TimeRangeHT = SplitTimeRangeText $SourceText
+		$NewText = "$($TimeRangeHT.Start) -> $($TimeRangeHT.Start)"
+		return $NewText
+	}
+
 	$CurrentDateTime = $CurrentDateTime.ToUniversalTime()
     Log "Checking ScheduleText against this DateTime UTC = $($CurrentDateTime.ToString())"
     Log "ScheduleText = $ScheduleText"
@@ -248,9 +255,23 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
     $TimeRangeList = @($ScheduleText -split "," | foreach {$_.Trim()})
     Log "Split ScheduleText into $($TimeRangeList.Count) time ranges"
 
+	# Check for "weekdays" prefix and, if found, explode into time ranges for M-F
+	$ExplodedTimeRangeList = @()
+	foreach ($entry in $CopyOfTimeRangeList) {
+		if ($entry -like "weekdays *") {
+			Log -Verbose "Exploding weekdays into ranges for M-F"
+			$entryCleaned = $entry -replace("weekdays ")
+			$ExplodedTimeRangeList += InsertPrefixOnBothSidesOfTimeRange "Monday" $entryCleaned
+
+		}
+		else {
+			$ExplodedTimeRangeList += $entry
+		}
+	}
+
     # Check each range against the current time to see if any schedule is matched
     $ScheduleMatched = $false
-    foreach($entry in $TimeRangeList)
+    foreach ($entry in $TimeRangeList)
     {
         if((CheckScheduleEntry -TimeRangeText $entry -CurrentDateTime $CurrentDateTime) -eq $true)
         {
