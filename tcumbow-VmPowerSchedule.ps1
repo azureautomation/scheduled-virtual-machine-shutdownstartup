@@ -7,7 +7,7 @@ param(
     [switch]$DevMode
 )
 
-$ScriptVersion = "0.1.0"
+$ScriptVersion = "0.1.1"
 $ScriptName = ".\tcumbow-VmPowerSchedule.ps1"
 
 if ($DevMode) {
@@ -240,28 +240,37 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 		else {Log "Did NOT match against ScheduleEntry $TimeRangeText"}
 		return $MatchSuccess
 	} # End function CheckScheduleEntry
-
 	function InsertPrefixOnBothSidesOfTimeRange ([string]$Prefix,[string]$SourceText)
 	{
 		$TimeRangeHT = SplitTimeRangeText $SourceText
-		$NewText = "$($TimeRangeHT.Start) -> $($TimeRangeHT.Start)"
+		if ((ConvertTimeStringWithTimeZoneToUtc ($TimeRangeHT.Start) ) -gt (ConvertTimeStringWithTimeZoneToUtc ($TimeRangeHT.End))) {
+			Log -Error "Cannot tolerate Start times that are greater than End times when using 'weekdays'"
+			$NewText = $null
+		}
+		else {
+			$NewText = "$Prefix $($TimeRangeHT.Start) -> $Prefix $($TimeRangeHT.End)"
+		}
 		return $NewText
 	}
 
 	$CurrentDateTime = $CurrentDateTime.ToUniversalTime()
     Log "Checking ScheduleText against this DateTime UTC = $($CurrentDateTime.ToString())"
     Log "ScheduleText = $ScheduleText"
-    # Parse the ranges in the Tag value. Expects a string of comma-separated time ranges, or a single time range
+    # Parse the ranges in the Tag value. Expects a string of comma-separated time ranges.
     $TimeRangeList = @($ScheduleText -split "," | foreach {$_.Trim()})
     Log "Split ScheduleText into $($TimeRangeList.Count) time ranges"
 
 	# Check for "weekdays" prefix and, if found, explode into time ranges for M-F
 	$ExplodedTimeRangeList = @()
-	foreach ($entry in $CopyOfTimeRangeList) {
+	foreach ($entry in $TimeRangeList) {
 		if ($entry -like "weekdays *") {
-			Log -Verbose "Exploding weekdays into ranges for M-F"
+			Log "Exploding weekdays into ranges for M-F"
 			$entryCleaned = $entry -replace("weekdays ")
 			$ExplodedTimeRangeList += InsertPrefixOnBothSidesOfTimeRange "Monday" $entryCleaned
+			$ExplodedTimeRangeList += InsertPrefixOnBothSidesOfTimeRange "Tuesday" $entryCleaned
+			$ExplodedTimeRangeList += InsertPrefixOnBothSidesOfTimeRange "Wednesday" $entryCleaned
+			$ExplodedTimeRangeList += InsertPrefixOnBothSidesOfTimeRange "Thursday" $entryCleaned
+			$ExplodedTimeRangeList += InsertPrefixOnBothSidesOfTimeRange "Friday" $entryCleaned
 
 		}
 		else {
@@ -271,7 +280,7 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 
     # Check each range against the current time to see if any schedule is matched
     $ScheduleMatched = $false
-    foreach ($entry in $TimeRangeList)
+    foreach ($entry in $ExplodedTimeRangeList)
     {
         if((CheckScheduleEntry -TimeRangeText $entry -CurrentDateTime $CurrentDateTime) -eq $true)
         {
