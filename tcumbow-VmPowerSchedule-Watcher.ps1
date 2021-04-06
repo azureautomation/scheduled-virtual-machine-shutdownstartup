@@ -258,6 +258,16 @@ function Get-VmPowerState ($vm)
 {
     ((Get-AzVM -Name $vm.Name -ResourceGroup $vm.ResourceGroupName -Status).Statuses | where {$_.Code -like "PowerState*"} | Select -First 1 -ExpandProperty Code) -replace "PowerState/"
 }
+function CallChildPowerAction ($vm,$action)
+{
+	$Properties = @{}
+	$Properties.VM = $vm
+	$Properties.Action = $action
+
+	$Data = $Properties | ConvertTo-Json
+
+	Invoke-AutomationWatcherAction -Message "Perform power action..." -Data $Data
+}
 # Function to handle power state assertion VM
 function AssertVirtualMachinePowerState
 {
@@ -282,7 +292,8 @@ function AssertVirtualMachinePowerState
         else
         {
             Log -Warning "[$($vm.Name)]: Starting VM"
-            Start-Job {Start-AzVM -Id $Using:vm.Id}
+			CallChildPowerAction $vm "Start"
+            # Start-Job {Start-AzVM -Id $Using:vm.Id}
         }
 	}
 
@@ -296,7 +307,8 @@ function AssertVirtualMachinePowerState
         else
         {
             Log -Warning "[$($vm.Name)]: Stopping VM"
-            Start-Job {Stop-AzVM -Id $Using:vm.Id -Force}
+			CallChildPowerAction $vm "Stop"
+            # Start-Job {Stop-AzVM -Id $Using:vm.Id -Force}
         }
 	}
 
@@ -322,27 +334,11 @@ try
     }
     Log "Current UTC/GMT time [$($currentTime.ToString("dddd, yyyy MMM dd HH:mm:ss"))] will be checked against schedules"
 
-    # Retrieve subscription name from variable asset if not specified
-    if($AzureSubscriptionName -eq "Use *Default Azure Subscription* Variable Value")
-    {
-        $AzureSubscriptionName = Get-AutomationVariable -Name "Default Azure Subscription"
-        if($AzureSubscriptionName.length -gt 0)
-        {
-            Log "Specified subscription name/ID: [$AzureSubscriptionName]"
-        }
-        else
-        {
-            throw "No subscription name was specified, and no variable asset with name 'Default Azure Subscription' was found. Either specify an Azure subscription name or define the default using a variable setting"
-        }
-    }
-
     # Authentication and connection
-    if (-not $DevMode) {
-        $connectionName = "AzureRunAsConnection"
-        $servicePrincipalConnection=Get-AutomationConnection -Name $connectionName
-        $DummyVariable = $(Add-AzAccount -ServicePrincipal -TenantId $servicePrincipalConnection.TenantId -ApplicationId $servicePrincipalConnection.ApplicationId -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint)
-        Log "Successfully logged into Azure subscription using Az cmdlets..."
-    }
+	$connectionName = "AzureRunAsConnection"
+	$servicePrincipalConnection=Get-AutomationConnection -Name $connectionName
+	$DummyVariable = $(Add-AzAccount -ServicePrincipal -TenantId $servicePrincipalConnection.TenantId -ApplicationId $servicePrincipalConnection.ApplicationId -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint)
+	Log "Successfully logged into Azure subscription using Az cmdlets..."
 
     # Get a list of all virtual machines in subscription
     Log "Getting all the VMs from the subscription..."
