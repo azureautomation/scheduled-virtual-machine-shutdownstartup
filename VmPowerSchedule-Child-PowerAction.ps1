@@ -95,7 +95,7 @@ try
 	}
 
     AssertVirtualMachinePowerState -VirtualMachine $VmObj -DesiredState $desiredState -Simulate $false
-    
+
 }
 catch
 {
