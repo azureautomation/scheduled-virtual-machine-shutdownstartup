@@ -249,9 +249,9 @@ function CallChildPowerAction ($vm,$action)
 	$params.Action = $action
 
 	Start-AzAutomationRunbook `
-		-AutomationAccountName 'AzAutomation' `
+		-AutomationAccountName (Get-AutomationVariable -Name "Internal_AutomationAccountName") `
 		-Name 'VmPowerSchedule-Child-PowerAction' `
-		-ResourceGroupName 'Misc' `
+		-ResourceGroupName (Get-AutomationVariable -Name "Internal_ResourceGroupName") `
 		-Parameters $params
 }
 # Function to handle power state assertion VM

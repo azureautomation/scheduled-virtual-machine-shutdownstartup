@@ -6,7 +6,12 @@ Az.Resources
 Az.Compute
 Az.Automation
 
+Requires the following shared variables to be set:
+Internal_AutomationAccountName (must be set to the name of the automation account where this runs)
+Internal_ResourceGroupName (must be set to the name of the resource group which contains the automation account)
+
 Automatically powers on/off VMs based on a schedule
+Applies to all VMs in the subscription that have been tagged with a schedule
 
 Specify the schedule for each VM by creating a tag on that VM called "AutoPowerSchedule"
 The contents of the tag determines the schedule.
