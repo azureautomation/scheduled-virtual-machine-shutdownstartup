@@ -254,7 +254,7 @@ function CallChildPowerAction ($vm,$action)
 		-ResourceGroupName (Get-AutomationVariable -Name "Internal_ResourceGroupName") `
 		-Parameters $parametersToPassToChildNotebook
 }
-# Function to handle power state assertion VM
+# Function to handle VM power state assertion
 function AssertVirtualMachinePowerState
 {
     param(
