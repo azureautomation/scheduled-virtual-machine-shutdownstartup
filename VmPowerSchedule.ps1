@@ -244,15 +244,15 @@ function Get-VmPowerState ($vm)
 }
 function CallChildPowerAction ($vm,$action)
 {
-	$params = @{}
-	$params.VM = $vm
-	$params.Action = $action
+	$parametersToPassToChildNotebook = @{}
+	$parametersToPassToChildNotebook.VM = $vm
+	$parametersToPassToChildNotebook.Action = $action
 
 	Start-AzAutomationRunbook `
 		-AutomationAccountName (Get-AutomationVariable -Name "Internal_AutomationAccountName") `
 		-Name 'VmPowerSchedule-Child-PowerAction' `
 		-ResourceGroupName (Get-AutomationVariable -Name "Internal_ResourceGroupName") `
-		-Parameters $params
+		-Parameters $parametersToPassToChildNotebook
 }
 # Function to handle power state assertion VM
 function AssertVirtualMachinePowerState
