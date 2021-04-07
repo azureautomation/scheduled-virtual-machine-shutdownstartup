@@ -2,7 +2,7 @@
 
 param(
     [parameter(Mandatory=$false)]
-    [bool]$Simulate = $true
+    [bool]$SimulationOnly = $false
 )
 
 function Log ($Text)
@@ -260,7 +260,7 @@ function AssertVirtualMachinePowerState
     param(
         [Object]$VirtualMachine,
         [string]$DesiredState,
-        [bool]$Simulate
+        [bool]$SimulationOnly
     )
     $vm = $VirtualMachine # shorter name for this variable
 
@@ -271,7 +271,7 @@ function AssertVirtualMachinePowerState
     # If should be started and isn't, start VM
 	if($DesiredState -eq "Started" -and $currentStatus -notmatch "running")
 	{
-        if($Simulate)
+        if($SimulationOnly)
         {
             Write-Warning "[$($vm.Name)]: SIMULATION -- Would have started VM. (No action taken)"
         }
@@ -286,7 +286,7 @@ function AssertVirtualMachinePowerState
 	# If should be stopped and isn't, stop VM
 	elseif($DesiredState -eq "StoppedDeallocated" -and $currentStatus -ne "deallocated")
 	{
-        if($Simulate)
+        if($SimulationOnly)
         {
             Write-Warning "[$($vm.Name)]: SIMULATION -- Would have stopped VM. (No action taken)"
         }
@@ -310,7 +310,7 @@ try
 {
     $currentTime = (Get-Date).ToUniversalTime()
     Log "Runbook started. Version: $ScriptVersion"
-    if($Simulate)
+    if($SimulationOnly)
     {
         Log "*** Running in SIMULATE mode. No power actions will be taken. ***"
     }
@@ -379,12 +379,12 @@ try
 		if($scheduleMatched)
 		{
 			# Schedule not matched. Start VM if stopped.
-			AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "Started" -Simulate $Simulate
+			AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "Started" -Simulate $SimulationOnly
 		}
 		else
 		{
 			# Schedule is matched. Shut down the VM if it is running.
-			AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "StoppedDeallocated" -Simulate $Simulate
+			AssertVirtualMachinePowerState -VirtualMachine $vm -DesiredState "StoppedDeallocated" -Simulate $SimulationOnly
 		}
     }
 
