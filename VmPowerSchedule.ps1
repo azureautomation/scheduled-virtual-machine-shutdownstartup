@@ -242,7 +242,7 @@ function Get-VmPowerState ($vm)
 {
     ((Get-AzVM -Name $vm.Name -ResourceGroup $vm.ResourceGroupName -Status).Statuses | where {$_.Code -like "PowerState*"} | Select -First 1 -ExpandProperty Code) -replace "PowerState/"
 }
-function CallChildPowerAction ($vm,$action)
+function CallChildRunbookPowerAction ($vm,$action)
 {
 	$parametersToPassToChildNotebook = @{}
 	$parametersToPassToChildNotebook.VM = $vm
@@ -278,7 +278,7 @@ function AssertVirtualMachinePowerState
         else
         {
             Write-Warning "[$($vm.Name)]: Starting VM"
-			CallChildPowerAction $vm "Start"
+			CallChildRunbookPowerAction $vm "Start"
             # Start-Job {Start-AzVM -Id $Using:vm.Id}
         }
 	}
@@ -293,7 +293,7 @@ function AssertVirtualMachinePowerState
         else
         {
             Write-Warning "[$($vm.Name)]: Stopping VM"
-			CallChildPowerAction $vm "Stop"
+			CallChildRunbookPowerAction $vm "Stop"
             # Start-Job {Stop-AzVM -Id $Using:vm.Id -Force}
         }
 	}
