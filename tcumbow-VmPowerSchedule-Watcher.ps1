@@ -5,25 +5,9 @@ param(
     [bool]$Simulate = $true
 )
 
-function Log
+function Log ($Text)
 {
-	[CmdletBinding()]
-	param (
-		[Parameter(Mandatory=$true,ValueFromPipeline)]
-		[string]
-		$Text,
-		[Parameter(Mandatory=$false)]
-		[switch]
-		$Warning,
-		[Parameter(Mandatory=$false)]
-		[switch]
-		$Error
-	)
-
-
-	if ($Error) {Write-Error $Text}
-	elseif ($Warning) {Write-Warning $Text}
-	else {Write-Verbose $Text}
+	Write-Verbose -Message $Text -Verbose
 }
 
 # Define function to handle checking the ScheduleText against a given DateTime (which will probably be the current DateTime in most cases)
@@ -36,7 +20,7 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 		elseif ($DateTimeString -like "*cst") {$TimeZoneID = "Central Standard Time";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
 		elseif ($DateTimeString -like "*utc") {$TimeZoneID = "UTC";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
 		else {
-			Log -Warning "No timezone specified, interpreting as UTC by default"
+			Write-Warning "No timezone specified, interpreting as UTC by default"
 			$TimeZoneID = "UTC";$DateTimeStringCleaned = $DateTimeString
 		}
 		Log "Interpreted $DateTimeString as $DateTimeStringCleaned in $TimeZoneID"
@@ -51,7 +35,7 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 		elseif ($DateTimeString -like "*cst") {$TimeZoneID = "Central Standard Time";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
 		elseif ($DateTimeString -like "*utc") {$TimeZoneID = "UTC";$DateTimeStringCleaned = $DateTimeString.Substring(0,$DateTimeString.Length-3)}
 		else {
-			Log -Warning "No timezone specified, interpreting as UTC by default"
+			Write-Warning "No timezone specified, interpreting as UTC by default"
 			$TimeZoneID = "UTC";$DateTimeStringCleaned = $DateTimeString
 		}
 		Log "Interpreted $DateTimeString as $DateTimeStringCleaned in $TimeZoneID"
@@ -142,13 +126,13 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 		Log "Checking validity of TimeRangeText: $TimeRangeText"
 
 		if(-not($TimeRangeText -like "*->*" -or $TimeRangeText -like "*-*")) {
-			Log -Warning "`tWARNING: Did not receive a valid time range. Check the syntax of entry, e.g. '<StartTime> -> <EndTime>'"
+			Write-Warning "`tWARNING: Did not receive a valid time range. Check the syntax of entry, e.g. '<StartTime> -> <EndTime>'"
 			return $false
 		}
 
 		$TimeRangeTextHT = SplitTimeRangeText $TimeRangeText
 		if ($null -eq $TimeRangeTextHT) {
-			Log -Warning "`tWARNING: Invalid time range format. Expects valid .Net DateTime-formatted start time and end time separated by '->'"
+			Write-Warning "`tWARNING: Invalid time range format. Expects valid .Net DateTime-formatted start time and end time separated by '->'"
 			return $false
 		}
 
@@ -157,13 +141,13 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 			((TimeTextStartsWithDayOfWeek $TimeRangeTextHT.Start) -and -not(TimeTextStartsWithDayOfWeek $TimeRangeTextHT.End)) `
 			-or `
 			(-not(TimeTextStartsWithDayOfWeek $TimeRangeTextHT.Start) -and (TimeTextStartsWithDayOfWeek $TimeRangeTextHT.End)) ) {
-			Log -Warning "`tWARNING: Invalid time range format. If you specify the day of week on one side, it should be specified on the other"
+			Write-Warning "`tWARNING: Invalid time range format. If you specify the day of week on one side, it should be specified on the other"
 			return $false
 		}
 
 		# Make sure each end of the time range can be interpreted as a date/time
 		elseif ((-not(ValidateTimeText $TimeRangeTextHT.Start)) -or (-not(ValidateTimeText $TimeRangeTextHT.End))) {
-			Log -Warning "`tWARNING: Invalid time range format. Expects valid .Net DateTime-formatted start time and end time separated by '->'"
+			Write-Warning "`tWARNING: Invalid time range format. Expects valid .Net DateTime-formatted start time and end time separated by '->'"
 			return $false
 		}
 
@@ -206,7 +190,7 @@ function CheckSchedule ([string]$ScheduleText, [datetime]$CurrentDateTime)
 	{
 		$TimeRangeHT = SplitTimeRangeText $SourceText
 		if ((ConvertTimeStringWithTimeZoneToUtc ($TimeRangeHT.Start) ) -gt (ConvertTimeStringWithTimeZoneToUtc ($TimeRangeHT.End))) {
-			Log -Error "Cannot tolerate Start times that are greater than End times when using 'weekdays'"
+			Write-Error "Cannot tolerate Start times that are greater than End times when using 'weekdays'"
 			$NewText = $null
 		}
 		else {
@@ -289,11 +273,11 @@ function AssertVirtualMachinePowerState
 	{
         if($Simulate)
         {
-            Log -Warning "[$($vm.Name)]: SIMULATION -- Would have started VM. (No action taken)"
+            Write-Warning "[$($vm.Name)]: SIMULATION -- Would have started VM. (No action taken)"
         }
         else
         {
-            Log -Warning "[$($vm.Name)]: Starting VM"
+            Write-Warning "[$($vm.Name)]: Starting VM"
 			CallChildPowerAction $vm "Start"
             # Start-Job {Start-AzVM -Id $Using:vm.Id}
         }
@@ -304,11 +288,11 @@ function AssertVirtualMachinePowerState
 	{
         if($Simulate)
         {
-            Log -Warning "[$($vm.Name)]: SIMULATION -- Would have stopped VM. (No action taken)"
+            Write-Warning "[$($vm.Name)]: SIMULATION -- Would have stopped VM. (No action taken)"
         }
         else
         {
-            Log -Warning "[$($vm.Name)]: Stopping VM"
+            Write-Warning "[$($vm.Name)]: Stopping VM"
 			CallChildPowerAction $vm "Stop"
             # Start-Job {Stop-AzVM -Id $Using:vm.Id -Force}
         }
@@ -381,7 +365,7 @@ try
         # Check that tag value was successfully obtained
         if($null -eq $schedule)
         {
-            Log -Warning "[$($vm.Name)]: Failed to get tagged schedule for virtual machine. Skipping this VM."
+            Write-Warning "[$($vm.Name)]: Failed to get tagged schedule for virtual machine. Skipping this VM."
             continue
         }
 
@@ -409,7 +393,7 @@ try
 catch
 {
     $errorMessage = $_.Exception.Message
-	Log -Error "SEVERE Unexpected exception: $errorMessage"
+	Write-Error "SEVERE Unexpected exception: $errorMessage"
     throw "Unexpected exception: $errorMessage"
 }
 finally
