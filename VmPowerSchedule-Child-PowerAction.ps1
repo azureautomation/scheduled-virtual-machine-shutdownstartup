@@ -1,4 +1,4 @@
-﻿# Tom Cumbow
+# Tom Cumbow
 
 param(
     $VM,$Action

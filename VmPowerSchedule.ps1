@@ -1,4 +1,4 @@
-﻿# Tom Cumbow
+# Tom Cumbow
 
 param(
     [parameter(Mandatory=$false)]
