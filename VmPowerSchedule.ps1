@@ -279,7 +279,6 @@ function AssertVirtualMachinePowerState
         {
             Write-Warning "[$($vm.Name)]: Starting VM"
 			CallChildRunbookPowerAction $vm "Start"
-            # Start-Job {Start-AzVM -Id $Using:vm.Id}
         }
 	}
 
@@ -294,7 +293,6 @@ function AssertVirtualMachinePowerState
         {
             Write-Warning "[$($vm.Name)]: Stopping VM"
 			CallChildRunbookPowerAction $vm "Stop"
-            # Start-Job {Stop-AzVM -Id $Using:vm.Id -Force}
         }
 	}
 
@@ -306,10 +304,10 @@ function AssertVirtualMachinePowerState
 }
 
 # Main runbook content
-try
+try # General error handling
 {
     $currentTime = (Get-Date).ToUniversalTime()
-    Log "Runbook started. Version: $ScriptVersion"
+    Log "Runbook started"
     if($SimulationOnly)
     {
         Log "*** Running in SIMULATE mode. No power actions will be taken. ***"
@@ -338,7 +336,7 @@ try
     foreach($vm in $AllVMs)
     {
         $schedule = $null
-		$scheduleTypeIsShutdown = $null
+		$scheduleTypeIsShutdown = $null # temporary code to be backward compatible with the old style tags that specified the shutdown schedule rather than the power-on schedule
 
         # Check for tag
 		if($vm.ResourceType -eq "Microsoft.Compute/virtualMachines" -and $vm.Tags.AutoPowerSchedule)
