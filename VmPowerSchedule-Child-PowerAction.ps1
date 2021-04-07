@@ -1,7 +1,7 @@
 # Tom Cumbow
 
 param(
-    $VM,$Action
+    $VM,$DesiredState
 )
 
 function Log ($Text)
@@ -76,8 +76,11 @@ try
         Log "*** Running in LIVE mode. ***"
     }
 	$vmName = $VM.Name
-    Log "Called with action: $Action"
+    Log "Called with DesiredState: $DesiredState"
 	Log "Called with VM with name: $vmName"
+
+    if ($DesiredState -ne "Started" -and $DesiredState -ne "StoppedDeallocated")
+        {Write-Error "Runbook called without a valid DesiredState parameter";throw "Runbook called without a valid DesiredState parameter"}
 
     # Authentication and connection
     $connectionName = "AzureRunAsConnection"
@@ -85,13 +88,7 @@ try
     $DummyVariable = $(Add-AzAccount -ServicePrincipal -TenantId $servicePrincipalConnection.TenantId -ApplicationId $servicePrincipalConnection.ApplicationId -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint)
     Log "Successfully logged into Azure subscription using Az cmdlets..."
 
-	switch ($Action) {
-		"Start" { $desiredState = "Started" }
-		"Stop" { $desiredState = "StoppedDeallocated" }
-		Default {}
-	}
-
-    AssertVirtualMachinePowerState -VirtualMachine $VmObj -DesiredState $desiredState -Simulate $false
+    AssertVirtualMachinePowerState -VirtualMachine $VmObj -DesiredState $DesiredState -Simulate $false
 
 }
 catch

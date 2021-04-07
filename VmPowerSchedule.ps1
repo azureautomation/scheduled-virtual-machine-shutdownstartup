@@ -242,11 +242,11 @@ function Get-VmPowerState ($vm)
 {
     ((Get-AzVM -Name $vm.Name -ResourceGroup $vm.ResourceGroupName -Status).Statuses | where {$_.Code -like "PowerState*"} | Select -First 1 -ExpandProperty Code) -replace "PowerState/"
 }
-function CallChildRunbookPowerAction ($vm,$action)
+function CallChildRunbookPowerAction ($vm,$desiredState)
 {
 	$parametersToPassToChildNotebook = @{}
 	$parametersToPassToChildNotebook.VM = $vm
-	$parametersToPassToChildNotebook.Action = $action
+	$parametersToPassToChildNotebook.DesiredState = $desiredState
 
 	Start-AzAutomationRunbook `
 		-AutomationAccountName (Get-AutomationVariable -Name "Internal_AutomationAccountName") `
@@ -278,7 +278,7 @@ function AssertVirtualMachinePowerState
         else
         {
             Write-Warning "[$($vm.Name)]: Starting VM"
-			CallChildRunbookPowerAction $vm "Start"
+			CallChildRunbookPowerAction $vm "Started"
         }
 	}
 
@@ -292,7 +292,7 @@ function AssertVirtualMachinePowerState
         else
         {
             Write-Warning "[$($vm.Name)]: Stopping VM"
-			CallChildRunbookPowerAction $vm "Stop"
+			CallChildRunbookPowerAction $vm "StoppedDeallocated"
         }
 	}
 
