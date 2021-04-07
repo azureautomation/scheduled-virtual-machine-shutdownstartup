@@ -31,7 +31,7 @@ function AssertVirtualMachinePowerState
 	if($DesiredState -eq "Started" -and $currentStatus -notmatch "running")
 	{
         Write-Warning "[$($vm.Name)]: Starting VM"
-        Start-AzVM -Id $vm.Id
+        Start-AzVM -Id $vm.Id | Write-Verbose
         Start-Sleep 10
         $newStatus = Get-VmPowerState $vm
         Log "[$($vm.Name)]: New power state is [$currentStatus]"
@@ -45,7 +45,7 @@ function AssertVirtualMachinePowerState
 	elseif($DesiredState -eq "StoppedDeallocated" -and $currentStatus -ne "deallocated")
 	{
         Write-Warning "[$($vm.Name)]: Stopping VM"
-        Stop-AzVM -Id $vm.Id -Force
+        Stop-AzVM -Id $vm.Id -Force | Write-Verbose
         Start-Sleep 10
         $newStatus = Get-VmPowerState $vm
         Log "[$($vm.Name)]: New power state is [$currentStatus]"
