@@ -79,7 +79,7 @@ try
     $DummyVariable = $(Add-AzAccount -ServicePrincipal -TenantId $servicePrincipalConnection.TenantId -ApplicationId $servicePrincipalConnection.ApplicationId -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint)
     Log "Successfully logged into Azure subscription using Az cmdlets..."
 
-    AssertVirtualMachinePowerState -VirtualMachine $VmObj -DesiredState $DesiredState
+    AssertVirtualMachinePowerState -VirtualMachine $VM -DesiredState $DesiredState
 
 }
 catch
