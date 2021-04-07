@@ -4,25 +4,9 @@ param(
     $VM,$Action
 )
 
-function Log
+function Log ($Text)
 {
-	[CmdletBinding()]
-	param (
-		[Parameter(Mandatory=$true,ValueFromPipeline)]
-		[string]
-		$Text,
-		[Parameter(Mandatory=$false)]
-		[switch]
-		$Warning,
-		[Parameter(Mandatory=$false)]
-		[switch]
-		$Error
-	)
-
-
-	if ($Error) {Write-Error $Text}
-	elseif ($Warning) {Write-Warning $Text}
-	else {Write-Verbose $Text}
+	Write-Verbose -Message $Text -Verbose
 }
 
 # Define function to handle checking the ScheduleText against a given DateTime (which will probably be the current DateTime in most cases)
@@ -51,11 +35,11 @@ function AssertVirtualMachinePowerState
 	{
         if($Simulate)
         {
-            Log -Warning "[$($vm.Name)]: SIMULATION -- Would have started VM. (No action taken)"
+            Write-Warning "[$($vm.Name)]: SIMULATION -- Would have started VM. (No action taken)"
         }
         else
         {
-            Log -Warning "[$($vm.Name)]: Starting VM"
+            Write-Warning "[$($vm.Name)]: Starting VM"
             Start-AzVM -Id $vm.Id
         }
 	}
@@ -65,11 +49,11 @@ function AssertVirtualMachinePowerState
 	{
         if($Simulate)
         {
-            Log -Warning "[$($vm.Name)]: SIMULATION -- Would have stopped VM. (No action taken)"
+            Write-Warning "[$($vm.Name)]: SIMULATION -- Would have stopped VM. (No action taken)"
         }
         else
         {
-            Log -Warning "[$($vm.Name)]: Stopping VM"
+            Write-Warning "[$($vm.Name)]: Stopping VM"
             \Stop-AzVM -Id $vm.Id -Force
         }
 	}
@@ -116,7 +100,7 @@ try
 catch
 {
     $errorMessage = $_.Exception.Message
-	Log -Error "SEVERE Unexpected exception: $errorMessage"
+	Write-Error "SEVERE Unexpected exception: $errorMessage"
     throw "Unexpected exception: $errorMessage"
 }
 finally
