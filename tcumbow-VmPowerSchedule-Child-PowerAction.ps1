@@ -1,7 +1,7 @@
 ﻿# Tom Cumbow
 
 param(
-    $JsonData
+    $VM,$Action
 )
 
 function Log
@@ -56,7 +56,7 @@ function AssertVirtualMachinePowerState
         else
         {
             Log -Warning "[$($vm.Name)]: Starting VM"
-            Start-Job {Start-AzVM -Id $Using:vm.Id}
+            Start-AzVM -Id $vm.Id
         }
 	}
 
@@ -70,7 +70,7 @@ function AssertVirtualMachinePowerState
         else
         {
             Log -Warning "[$($vm.Name)]: Stopping VM"
-            Start-Job {Stop-AzVM -Id $Using:vm.Id -Force}
+            \Stop-AzVM -Id $vm.Id -Force
         }
 	}
 
@@ -93,12 +93,10 @@ try
     {
         Log "*** Running in LIVE mode. ***"
     }
-	Log "Converting from Json"
-	$data = $JsonData.EventProperties.Data | ConvertFrom-Json
-	$Action = $data.Action
-	$VmObj = $data.VM
+	$VmObj = $VM
+	$VmId = $VM.Id
     Log "Called with action: $Action"
-	Log "Called with VM ID: $(VmObj.Id)"
+	Log "Called with VM ID: $VmId"
 
     # Authentication and connection
     $connectionName = "AzureRunAsConnection"
@@ -106,7 +104,13 @@ try
     $DummyVariable = $(Add-AzAccount -ServicePrincipal -TenantId $servicePrincipalConnection.TenantId -ApplicationId $servicePrincipalConnection.ApplicationId -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint)
     Log "Successfully logged into Azure subscription using Az cmdlets..."
 
-    
+	switch ($Action) {
+		"Start" { $desiredState = "Started" }
+		"Stop" { $desiredState = "StoppedDeallocated" }
+		Default {}
+	}
+
+    AssertVirtualMachinePowerState -VirtualMachine $VmObj -DesiredState $desiredState -Simulate $false
     
 }
 catch

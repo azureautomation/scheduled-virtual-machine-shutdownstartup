@@ -260,13 +260,15 @@ function Get-VmPowerState ($vm)
 }
 function CallChildPowerAction ($vm,$action)
 {
-	$Properties = @{}
-	$Properties.VM = $vm
-	$Properties.Action = $action
+	$params = @{}
+	$params.VM = $vm
+	$params.Action = $action
 
-	$Data = $Properties | ConvertTo-Json
-
-	Invoke-AutomationWatcherAction -Message "Perform power action..." -Data $Data
+	Start-AzAutomationRunbook `
+		-AutomationAccountName 'AzAutomation' `
+		-Name 'VmPowerSchedule-Child-PowerAction' `
+		-ResourceGroupName 'Misc' `
+		-Parameters $params
 }
 # Function to handle power state assertion VM
 function AssertVirtualMachinePowerState
