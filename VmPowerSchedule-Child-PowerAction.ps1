@@ -34,7 +34,7 @@ function AssertVirtualMachinePowerState
         Start-AzVM -Id $vm.Id | Write-Verbose
         Start-Sleep 10
         $newStatus = Get-VmPowerState $vm
-        Log "[$($vm.Name)]: New power state is [$currentStatus]"
+        Log "[$($vm.Name)]: New power state is [$newStatus]"
         if ($newStatus -notmatch "running")
         {
             Write-Error "[$($vm.Name)]: VM was NOT successfully started"
@@ -48,7 +48,7 @@ function AssertVirtualMachinePowerState
         Stop-AzVM -Id $vm.Id -Force | Write-Verbose
         Start-Sleep 10
         $newStatus = Get-VmPowerState $vm
-        Log "[$($vm.Name)]: New power state is [$currentStatus]"
+        Log "[$($vm.Name)]: New power state is [$newStatus]"
         if ($newStatus -ne "deallocated")
         {
             Write-Error "[$($vm.Name)]: VM was NOT successfully deallocated"
