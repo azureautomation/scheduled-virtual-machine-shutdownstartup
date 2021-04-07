@@ -19,8 +19,7 @@ function AssertVirtualMachinePowerState
 {
     param(
         [Object]$VirtualMachine,
-        [string]$DesiredState,
-        [bool]$Simulate
+        [string]$DesiredState
     )
     $vm = $VirtualMachine # shorter name for this variable
 
@@ -31,29 +30,15 @@ function AssertVirtualMachinePowerState
     # If should be started and isn't, start VM
 	if($DesiredState -eq "Started" -and $currentStatus -notmatch "running")
 	{
-        if($Simulate)
-        {
-            Write-Warning "[$($vm.Name)]: SIMULATION -- Would have started VM. (No action taken)"
-        }
-        else
-        {
-            Write-Warning "[$($vm.Name)]: Starting VM"
-            Start-AzVM -Id $vm.Id
-        }
+        Write-Warning "[$($vm.Name)]: Starting VM"
+        Start-AzVM -Id $vm.Id
 	}
 
 	# If should be stopped and isn't, stop VM
 	elseif($DesiredState -eq "StoppedDeallocated" -and $currentStatus -ne "deallocated")
 	{
-        if($Simulate)
-        {
-            Write-Warning "[$($vm.Name)]: SIMULATION -- Would have stopped VM. (No action taken)"
-        }
-        else
-        {
-            Write-Warning "[$($vm.Name)]: Stopping VM"
-            \Stop-AzVM -Id $vm.Id -Force
-        }
+        Write-Warning "[$($vm.Name)]: Stopping VM"
+        Stop-AzVM -Id $vm.Id -Force
 	}
 
     # Otherwise, current power state is correct
@@ -67,14 +52,6 @@ function AssertVirtualMachinePowerState
 try
 {
     $currentTime = (Get-Date).ToUniversalTime()
-    if($Simulate)
-    {
-        Log "*** Running in SIMULATE mode. No power actions will be taken. ***"
-    }
-    else
-    {
-        Log "*** Running in LIVE mode. ***"
-    }
 	$vmName = $VM.Name
     Log "Called with DesiredState: $DesiredState"
 	Log "Called with VM with name: $vmName"
@@ -88,7 +65,7 @@ try
     $DummyVariable = $(Add-AzAccount -ServicePrincipal -TenantId $servicePrincipalConnection.TenantId -ApplicationId $servicePrincipalConnection.ApplicationId -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint)
     Log "Successfully logged into Azure subscription using Az cmdlets..."
 
-    AssertVirtualMachinePowerState -VirtualMachine $VmObj -DesiredState $DesiredState -Simulate $false
+    AssertVirtualMachinePowerState -VirtualMachine $VmObj -DesiredState $DesiredState
 
 }
 catch
