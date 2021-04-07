@@ -9,13 +9,11 @@ function Log ($Text)
 	Write-Verbose -Message $Text -Verbose
 }
 
-# Define function to handle checking the ScheduleText against a given DateTime (which will probably be the current DateTime in most cases)
-# This function contains nested functions so that you can collapse all the date/time logic more easily
-
 function Get-VmPowerState ($vm)
 {
     ((Get-AzVM -Name $vm.Name -ResourceGroup $vm.ResourceGroupName -Status).Statuses | where {$_.Code -like "PowerState*"} | Select -First 1 -ExpandProperty Code) -replace "PowerState/"
 }
+
 # Function to handle power state assertion VM
 function AssertVirtualMachinePowerState
 {
@@ -77,10 +75,9 @@ try
     {
         Log "*** Running in LIVE mode. ***"
     }
-	$VmObj = $VM
-	$VmId = $VM.Id
+	$vmName = $VM.Name
     Log "Called with action: $Action"
-	Log "Called with VM ID: $VmId"
+	Log "Called with VM with name: $vmName"
 
     # Authentication and connection
     $connectionName = "AzureRunAsConnection"
